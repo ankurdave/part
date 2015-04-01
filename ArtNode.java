@@ -58,6 +58,11 @@ abstract class ArtNode extends Node {
 
     public abstract void iter(IterCallback cb);
 
+    // Precondition: isLastChild(i) == false
+    public abstract int nextChildAtOrAfter(int i);
+
+    public abstract Node childAt(int i);
+
     public void insert(ChildPtr ref, final byte[] key, Object value, int depth, boolean force_clone) {
         boolean do_clone = force_clone || this.refcount > 1;
 

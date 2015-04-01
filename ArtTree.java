@@ -1,5 +1,8 @@
 package com.ankurdave.part;
 
+import scala.Tuple2;
+import java.util.Iterator;
+
 public class ArtTree extends ChildPtr {
     public ArtTree() {
         root = null;
@@ -65,6 +68,20 @@ public class ArtTree extends ChildPtr {
 
     public void iter(IterCallback cb) {
         Node.iter(root, cb);
+    }
+
+    public Iterator<Tuple2<byte[], Object>> iterator() {
+        return new ArtIterator(root);
+    }
+
+    public long size() {
+        int n = 0;
+        Iterator<Tuple2<byte[], Object>> it = iterator();
+        while (it.hasNext()) {
+            it.next();
+            n++;
+        }
+        return n;
     }
 
     public int destroy() {

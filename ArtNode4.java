@@ -74,6 +74,18 @@ class ArtNode4 extends ArtNode {
         }
     }
 
+    @Override public boolean exhausted(int i) {
+        return i >= num_children;
+    }
+
+    @Override public int nextChildAtOrAfter(int i) {
+        return i;
+    }
+
+    @Override public Node childAt(int i) {
+        return children[i];
+    }
+
     @Override public int decrement_refcount() {
         if (--this.refcount <= 0) {
             int freed = 0;

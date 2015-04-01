@@ -1,6 +1,8 @@
 package com.ankurdave.part;
 
 import java.util.Random;
+import java.util.Iterator;
+import scala.Tuple2;
 
 public class ArtCorrectnessTest {
     private static int m_0 = 100;
@@ -11,6 +13,7 @@ public class ArtCorrectnessTest {
         for (int i = 0; i < b.length; i++) {
             System.out.print((int)b[i] + " ");
         }
+        System.out.println();
     }
 
     private static byte[][] key_list() {
@@ -91,6 +94,15 @@ public class ArtCorrectnessTest {
         Test t = new Test();
         union_map.iter(t);
         assert(t.n == m_0 * 2);
+
+        Iterator<Tuple2<byte[], Object>> it = union_map.iterator();
+        int n2 = 0;
+        while (it.hasNext()) {
+            Tuple2<byte[], Object> elem = it.next();
+            print_bytes(elem._1());
+            n2++;
+        }
+        assert(n2 == t.n);
 
         System.out.println("union_map had size " + union_map.destroy());
 

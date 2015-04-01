@@ -85,6 +85,29 @@ class ArtNode48 extends ArtNode {
         }
     }
 
+    @Override public boolean exhausted(int c) {
+        for (int i = c; i < 256; i++) {
+            if (keys[i] != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override public int nextChildAtOrAfter(int c) {
+        int pos = c;
+        for (; pos < 256; pos++) {
+            if (keys[pos] != 0) {
+                break;
+            }
+        }
+        return pos;
+    }
+
+    @Override public Node childAt(int idx) {
+        return children[idx - 1];
+    }
+
     @Override public int decrement_refcount() {
         if (--this.refcount <= 0) {
             int freed = 0;

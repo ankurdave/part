@@ -66,6 +66,29 @@ class ArtNode256 extends ArtNode {
         }
     }
 
+    @Override public boolean exhausted(int c) {
+        for (int i = c; i < 256; i++) {
+            if (children[i] != null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override public int nextChildAtOrAfter(int c) {
+        int pos = c;
+        for (; pos < 256; pos++) {
+            if (children[pos] != null) {
+                break;
+            }
+        }
+        return pos;
+    }
+
+    @Override public Node childAt(int pos) {
+        return children[pos];
+    }
+
     @Override public int decrement_refcount() {
         if (--this.refcount <= 0) {
             int freed = 0;

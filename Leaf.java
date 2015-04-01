@@ -89,6 +89,10 @@ class Leaf extends Node {
         cb.apply(key, value);
     }
 
+    @Override public boolean exhausted(int i) {
+        return true;
+    }
+
     @Override public int decrement_refcount() {
         if (--this.refcount <= 0) {
             count--;
