@@ -30,6 +30,10 @@ public class ArtCorrectnessTest {
         }
     }
 
+    private static int to_i(Object o) {
+        return ((Integer)o).intValue();
+    }
+
     public static void main(String[] args) {
         byte[][] a = key_list();
         byte[][] b = key_list();
@@ -42,15 +46,15 @@ public class ArtCorrectnessTest {
             b_map.insert(b[i], 2);
 
         for (int i = 0; i < a.length; i++) {
-            assert(a_map.search(a[i]) == 1);
+            assert(to_i(a_map.search(a[i])) == 1);
             Integer b_res = (Integer)b_map.search(a[i]);
-            assert(b_res == null || b_res == 2);
+            assert(b_res == null || to_i(b_res) == 2);
         }
 
         for (int i = 0; i < b.length; i++) {
             Integer a_res = (Integer)a_map.search(b[i]);
-            assert(a_res == null || a_res == 1);
-            assert(b_map.search(b[i]) == 2);
+            assert(a_res == null || to_i(a_res) == 1);
+            assert(to_i(b_map.search(b[i])) == 2);
         }
 
         System.out.println("Leaf: " + Leaf.count + ", "
@@ -70,17 +74,17 @@ public class ArtCorrectnessTest {
                            + "Node256: " + ArtNode256.count);
 
         for (int i = 0; i < a.length; i++) {
-            assert(a_map.search(a[i]) == 1);
+            assert(to_i(a_map.search(a[i])) == 1);
             Integer b_res = (Integer)b_map.search(a[i]);
-            assert(b_res == null || b_res == 2);
-            assert(union_map.search(a[i]) == 1);
+            assert(b_res == null || to_i(b_res) == 2);
+            assert(to_i(union_map.search(a[i])) == 1);
         }
 
         for (int i = 0; i < b.length; i++) {
             Integer a_res = (Integer)a_map.search(b[i]);
-            assert(a_res == null || a_res == 1);
-            assert(b_map.search(b[i]) == 2);
-            assert(union_map.search(b[i]) == 3);
+            assert(a_res == null || to_i(a_res) == 1);
+            assert(to_i(b_map.search(b[i])) == 2);
+            assert(to_i(union_map.search(b[i])) == 3);
         }
 
         // Test iteration
@@ -97,15 +101,15 @@ public class ArtCorrectnessTest {
                            + "Node256: " + ArtNode256.count);
 
         for (int i = 0; i < a.length; i++) {
-            assert(a_map.search(a[i]) == 1);
+            assert(to_i(a_map.search(a[i])) == 1);
             Integer b_res = (Integer)b_map.search(a[i]);
-            assert(b_res == null || b_res == 2);
+            assert(b_res == null || to_i(b_res) == 2);
         }
 
         for (int i = 0; i < b.length; i++) {
             Integer a_res = (Integer)a_map.search(b[i]);
-            assert(a_res == null || a_res == 1);
-            assert(b_map.search(b[i]) == 2);
+            assert(a_res == null || to_i(a_res) == 1);
+            assert(to_i(b_map.search(b[i])) == 2);
         }
 
         System.out.println("a_map had size " + a_map.destroy());

@@ -36,12 +36,16 @@ public class ArtMicrobenchmark {
         }
     }
 
+    private static int to_uint(byte b) {
+        return ((int)b) & 0xFF;
+    }
+
     private static class Test implements IterCallback {
         private int n = 0;
         private long sum = 0;
         @Override public void apply(final byte[] key, Object value) {
             n++;
-            sum += key[0] + ((byte[])value)[0];
+            sum += to_uint(key[0]) + to_uint(((byte[])value)[0]);
         }
     }
 
@@ -57,12 +61,19 @@ public class ArtMicrobenchmark {
         }
 
         {
+            Runtime runtime = Runtime.getRuntime();
+            System.out.println("{'measurement': 'memory', 'datastructure': '" + label
+                               + "', 'y': " + (runtime.totalMemory() - runtime.freeMemory())
+                               + ", 'valsize': " + value_len + "},");
+        }
+
+        {
             long begin = System.nanoTime();
             for (int iter = 0; iter < T; iter++) {
                 byte[] str = gen_key();
                 byte[] result = (byte[])art.search(str);
                 if (result != null) {
-                    sum += result[0];
+                    sum += to_uint(result[0]);
                 }
             }
             long end = System.nanoTime();
