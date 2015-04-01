@@ -1,7 +1,6 @@
 package com.ankurdave.part;
 
 import java.util.Random;
-import java.util.ArrayList;
 
 public class ArtCorrectnessTest {
     private static int m_0 = 100;
