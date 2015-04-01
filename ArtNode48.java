@@ -46,7 +46,7 @@ class ArtNode48 extends ArtNode {
 
     @Override public Leaf minimum() {
         int idx = 0;
-        while (keys[idx] != 0) idx++;
+        while (keys[idx] == 0) idx++;
         Node child = children[to_uint(keys[idx]) - 1];
         return Node.minimum(child);
      }
