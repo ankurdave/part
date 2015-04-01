@@ -52,7 +52,7 @@ class ArtNode48 extends ArtNode {
      }
 
     @Override public void add_child(ChildPtr ref, byte c, Node child, boolean force_clone) {
-        if (this.num_children < 28) {
+        if (this.num_children < 48) {
             int pos = this.num_children;
 
             ArtNode48 target = force_clone ? new ArtNode48(this) : this;
