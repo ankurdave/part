@@ -191,8 +191,7 @@ public:
 
     static Node<V>** find_child(ArtNode<V>* n, unsigned char c);
 
-    static void add_child(ArtNode<V>* n, Node<V>** ref, unsigned char c, Node<V>* child,
-                          bool force_clone);
+    static void add_child(ArtNode<V>* n, Node<V>** ref, unsigned char c, Node<V>* child);
 
     void insert(Node<V>** ref, const unsigned char *key,
                 int key_len, V value, int depth,
@@ -236,8 +235,7 @@ public:
         return NULL;
     }
 
-    void add_child(Node<V>** ref, unsigned char c, Node<V>* child,
-                   bool force_clone);
+    void add_child(Node<V>** ref, unsigned char c, Node<V>* child);
 
     void iter(std::function<void(const unsigned char*, uint32_t, V)> cb) {
         for (int i = 0; i < this->num_children; i++) {
@@ -325,8 +323,7 @@ public:
         return NULL;
     }
 
-    void add_child(Node<V>** ref, unsigned char c, Node<V>* child,
-                   bool force_clone);
+    void add_child(Node<V>** ref, unsigned char c, Node<V>* child);
 
     void iter(std::function<void(const unsigned char*, uint32_t, V)> cb) {
         for (int i = 0; i < this->num_children; i++) {
@@ -406,8 +403,7 @@ public:
         return NULL;
     }
 
-    void add_child(Node<V>** ref, unsigned char c, Node<V>* child,
-                   bool force_clone);
+    void add_child(Node<V>** ref, unsigned char c, Node<V>* child);
 
     void iter(std::function<void(const unsigned char*, uint32_t, V)> cb) {
         for (int i = 0; i < 256; i++) {
@@ -496,16 +492,11 @@ public:
         return NULL;
     }
 
-    void add_child(Node<V>** ref, unsigned char c, Node<V>* child,
-                   bool force_clone) {
-        ArtNode256<V>* target = force_clone ? new ArtNode256<V>(*this) : this;
-        target->num_children++;
-        target->children[c] = child;
+    void add_child(Node<V>** ref, unsigned char c, Node<V>* child) {
+        (void)ref;
+        this->num_children++;
+        this->children[c] = child;
         child->refcount++;
-        if (force_clone) {
-            // Update the parent pointer to the new node
-            Node<V>::switch_ref(ref, target);
-        }
     }
 
     void iter(std::function<void(const unsigned char*, uint32_t, V)> cb) {
@@ -594,8 +585,7 @@ public:
         return NULL;
     }
 
-    void add_child(Node<V>** ref, unsigned char c, Node<V>* child,
-                   bool force_clone);
+    void add_child(Node<V>** ref, unsigned char c, Node<V>* child);
 
     void iter(std::function<void(const unsigned char*, uint32_t, V)> cb) {
         for (int i = 0; i < 256; i++) {

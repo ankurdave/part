@@ -156,17 +156,16 @@ Node<V>** ArtNode<V>::find_child(ArtNode<V>* n, unsigned char c) {
 }
 
 template<typename V>
-void ArtNode<V>::add_child(ArtNode<V>* n, Node<V>** ref, unsigned char c, Node<V>* child,
-                           bool force_clone) {
+void ArtNode<V>::add_child(ArtNode<V>* n, Node<V>** ref, unsigned char c, Node<V>* child) {
     if (!n) return;
 
     switch (n->type) {
-    case NODE4: return static_cast<ArtNode4<V>*>(n)->add_child(ref, c, child, force_clone);
-    case NODE16: return static_cast<ArtNode16<V>*>(n)->add_child(ref, c, child, force_clone);
-    case NODE48: return static_cast<ArtNode48<V>*>(n)->add_child(ref, c, child, force_clone);
-    case NODE256: return static_cast<ArtNode256<V>*>(n)->add_child(ref, c, child, force_clone);
+    case NODE4: return static_cast<ArtNode4<V>*>(n)->add_child(ref, c, child);
+    case NODE16: return static_cast<ArtNode16<V>*>(n)->add_child(ref, c, child);
+    case NODE48: return static_cast<ArtNode48<V>*>(n)->add_child(ref, c, child);
+    case NODE256: return static_cast<ArtNode256<V>*>(n)->add_child(ref, c, child);
 #ifdef USE_VARNODE
-    case VARNODE: return static_cast<ArtVarNode<V>*>(n)->add_child(ref, c, child, force_clone);
+    case VARNODE: return static_cast<ArtVarNode<V>*>(n)->add_child(ref, c, child);
 #endif
     }
 
@@ -204,8 +203,8 @@ void Leaf<V>::insert(Node<V>** ref, const unsigned char *key,
         result->partial_len = longest_prefix;
         memcpy(result->partial, key + depth, min(MAX_PREFIX_LEN, longest_prefix));
         // Add the leafs to the new node4
-        result->add_child(ref, this->key[depth + longest_prefix], this, false);
-        result->add_child(ref, l2->key[depth+longest_prefix], l2, false);
+        result->add_child(ref, this->key[depth + longest_prefix], this);
+        result->add_child(ref, l2->key[depth+longest_prefix], l2);
 
         Node<V>::decrement_refcount(ref_old);
 
@@ -243,14 +242,14 @@ void ArtNode<V>::insert(Node<V>** ref, const unsigned char *key,
         // Adjust the prefix of the old node
         ArtNode<V>* this_writable = do_clone ? static_cast<ArtNode<V>*>(Node<V>::clone(this)) : this;
         if (partial_len <= MAX_PREFIX_LEN) {
-            result->add_child(ref, this_writable->partial[prefix_diff], this_writable, false);
+            result->add_child(ref, this_writable->partial[prefix_diff], this_writable);
             this_writable->partial_len -= (prefix_diff + 1);
             memmove(this_writable->partial, this_writable->partial + prefix_diff + 1,
                     min(MAX_PREFIX_LEN, this_writable->partial_len));
         } else {
             this_writable->partial_len -= (prefix_diff+1);
             const Leaf<V>* l = Node<V>::minimum(this);
-            result->add_child(ref, l->key[depth + prefix_diff], this_writable, false);
+            result->add_child(ref, l->key[depth + prefix_diff], this_writable);
             memcpy(this_writable->partial, l->key + depth + prefix_diff + 1,
                    min(MAX_PREFIX_LEN, this_writable->partial_len));
         }
@@ -259,7 +258,7 @@ void ArtNode<V>::insert(Node<V>** ref, const unsigned char *key,
 
         // Insert the new leaf
         auto l = new Leaf<V>(key, key_len, value);
-        result->add_child(ref, key[depth + prefix_diff], l, false);
+        result->add_child(ref, key[depth + prefix_diff], l);
 
         Node<V>::decrement_refcount(ref_old);
 
@@ -277,11 +276,11 @@ RECURSE_SEARCH:;
     // Do the insert, either in a child (if a matching child already exists) or in self
     Node<V>** child = ArtNode<V>::find_child(this_writable, key[depth]);
     if (child) {
-        Node<V>::insert(*child, child, key, key_len, value, depth+1, false);
+        Node<V>::insert(*child, child, key, key_len, value, depth+1, do_clone);
     } else {
         // No child, node goes within us
         auto l = new Leaf<V>(key, key_len, value);
-        ArtNode<V>::add_child(this_writable, ref, key[depth], l, false);
+        ArtNode<V>::add_child(this_writable, ref, key[depth], l);
         // If `this` was full and `do_clone` is true, we will clone a full node
         // and then immediately delete the clone in favor of a larger node.
         // TODO: avoid this
@@ -290,44 +289,35 @@ RECURSE_SEARCH:;
 
 
 template<typename V>
-void ArtNode4<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child,
-                            bool force_clone) {
+void ArtNode4<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child) {
     if (this->num_children < 4) {
         int idx;
         for (idx = 0; idx < this->num_children; idx++) {
             if (c < keys[idx]) break;
         }
 
-        ArtNode4<V>* target = force_clone ? new ArtNode4<V>(*this) : this;
-
         // Shift to make room
-        memmove(target->keys + idx + 1, target->keys + idx, target->num_children - idx);
-        memmove(target->children + idx + 1, target->children + idx,
-                (target->num_children - idx) * sizeof(Node<V>*));
+        memmove(this->keys + idx + 1, this->keys + idx, this->num_children - idx);
+        memmove(this->children + idx + 1, this->children + idx,
+                (this->num_children - idx) * sizeof(Node<V>*));
 
         // Insert element
-        target->keys[idx] = c;
-        target->children[idx] = child;
+        this->keys[idx] = c;
+        this->children[idx] = child;
         child->refcount++;
-        target->num_children++;
-
-        if (force_clone) {
-            // Update the parent pointer to the new node
-            Node<V>::switch_ref(ref, target);
-        }
+        this->num_children++;
     } else {
         // Copy the node4 into a new node16
         auto result = new ArtNode16<V>(this);
         // Update the parent pointer to the node16
         Node<V>::switch_ref(ref, result);
         // Insert the element into the node16 instead
-        result->add_child(ref, c, child, false);
+        result->add_child(ref, c, child);
     }
 }
 
 template<typename V>
-void ArtNode16<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child,
-                             bool force_clone) {
+void ArtNode16<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child) {
     if (this->num_children < 16) {
         __m128i cmp;
 
@@ -347,23 +337,16 @@ void ArtNode16<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child,
             idx = this->num_children;
         }
 
-        ArtNode16<V>* target = force_clone ? new ArtNode16<V>(*this) : this;
-
         // Shift to make room
-        memmove(target->keys + idx + 1, target->keys + idx, target->num_children - idx);
-        memmove(target->children + idx + 1, target->children + idx,
-                (target->num_children - idx) * sizeof(Node<V>*));
+        memmove(this->keys + idx + 1, this->keys + idx, this->num_children - idx);
+        memmove(this->children + idx + 1, this->children + idx,
+                (this->num_children - idx) * sizeof(Node<V>*));
 
         // Insert element
-        target->keys[idx] = c;
-        target->children[idx] = child;
+        this->keys[idx] = c;
+        this->children[idx] = child;
         child->refcount++;
-        target->num_children++;
-
-        if (force_clone) {
-            // Update the parent pointer to the new node
-            Node<V>::switch_ref(ref, target);
-        }
+        this->num_children++;
     } else {
 #ifndef USE_VARNODE
         auto result = new ArtNode48<V>(this);
@@ -376,34 +359,26 @@ void ArtNode16<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child,
         // Update the parent pointer to the node48
         Node<V>::switch_ref(ref, result);
         // Insert the element into the node48 instead
-        result->add_child(ref, c, child, false);
+        result->add_child(ref, c, child);
     }
 }
 
 template<typename V>
-void ArtNode48<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child,
-                             bool force_clone) {
+void ArtNode48<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child) {
     if (this->num_children < 48) {
         int pos = this->num_children;
 
-        ArtNode48<V>* target = force_clone ? new ArtNode48<V>(*this) : this;
-
-        target->children[pos] = child;
+        this->children[pos] = child;
         child->refcount++;
-        target->keys[c] = pos + 1;
-        target->num_children++;
-
-        if (force_clone) {
-            // Update the parent pointer to the new node
-            Node<V>::switch_ref(ref, target);
-        }
+        this->keys[c] = pos + 1;
+        this->num_children++;
     } else {
         // Copy the node48 into a node256
         auto result = new ArtNode256<V>(this);
         // Update the parent pointer to the node256
         Node<V>::switch_ref(ref, result);
         // Insert the element into the node256 instead
-        result->add_child(ref, c, child, false);
+        result->add_child(ref, c, child);
     }
 }
 
@@ -426,35 +401,21 @@ ArtNode256<V>::ArtNode256(ArtVarNode<V>* other) : ArtNode256<V>() {
 
 #ifdef USE_VARNODE
 template<typename V>
-void ArtVarNode<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child,
-                              bool force_clone) {
+void ArtVarNode<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child) {
     if (this->num_children < capacity) {
         int pos = this->num_children;
 
-        ArtVarNode<V>* target;
-        if (force_clone) {
-            void* place = malloc(offsetof(class ArtVarNode<V>, children[capacity]));
-            target = new(place) ArtVarNode<V>(capacity, *this);
-        } else {
-            target = this;
-        }
-
-        target->children[pos] = child;
+        this->children[pos] = child;
         child->refcount++;
-        target->keys[c] = pos + 1;
-        target->num_children++;
-
-        if (force_clone) {
-            // Update the parent pointer to the new node
-            Node<V>::switch_ref(ref, target);
-        }
+        this->keys[c] = pos + 1;
+        this->num_children++;
     } else if (grow_varnode(capacity) >= 256) {
         // Just allocate a Node256
         auto result = new ArtNode256<V>(this);
         // Update the parent pointer to the node256
         Node<V>::switch_ref(ref, result);
         // Insert the element into the node256 instead
-        result->add_child(ref, c, child, false);
+        result->add_child(ref, c, child);
     } else {
         // Allocate a new node with more capacity
         uint8_t new_capacity = static_cast<uint8_t>(grow_varnode(capacity));
@@ -463,7 +424,7 @@ void ArtVarNode<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child,
         // Update the parent pointer to the new node
         Node<V>::switch_ref(ref, result);
         // Insert the element into the new node instead
-        result->add_child(ref, c, child, false);
+        result->add_child(ref, c, child);
     }
 }
 #endif
