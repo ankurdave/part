@@ -49,15 +49,10 @@ class ArtNode256 extends ArtNode {
         return Node.minimum(children[idx]);
      }
 
-    @Override public void add_child(ChildPtr ref, byte c, Node child, boolean force_clone) {
-        ArtNode256 target = force_clone ? new ArtNode256(this) : this;
-        target.num_children++;
-        target.children[to_uint(c)] = child;
+    @Override public void add_child(ChildPtr ref, byte c, Node child) {
+        this.num_children++;
+        this.children[to_uint(c)] = child;
         child.refcount++;
-        if (force_clone) {
-            // Update the parent pointer to the new node
-            ref.change(target);
-        }
     }
 
     @Override public void iter(IterCallback cb) {

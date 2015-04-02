@@ -35,36 +35,29 @@ class ArtNode4 extends ArtNode {
         return Node.minimum(children[0]);
     }
 
-    @Override public void add_child(ChildPtr ref, byte c, Node child, boolean force_clone) {
+    @Override public void add_child(ChildPtr ref, byte c, Node child) {
         if (this.num_children < 4) {
             int idx;
             for (idx = 0; idx < this.num_children; idx++) {
                 if (to_uint(c) < keys[idx]) break;
             }
 
-            ArtNode4 target = force_clone ? new ArtNode4(this) : this;
-
             // Shift to make room
-            System.arraycopy(target.keys, idx, target.keys, idx + 1, target.num_children - idx);
-            System.arraycopy(target.children, idx, target.children, idx + 1, target.num_children - idx);
+            System.arraycopy(this.keys, idx, this.keys, idx + 1, this.num_children - idx);
+            System.arraycopy(this.children, idx, this.children, idx + 1, this.num_children - idx);
 
             // Insert element
-            target.keys[idx] = c;
-            target.children[idx] = child;
+            this.keys[idx] = c;
+            this.children[idx] = child;
             child.refcount++;
-            target.num_children++;
-
-            if (force_clone) {
-                // Update the parent pointer to the new node
-                ref.change(target);
-            }
+            this.num_children++;
         } else {
             // Copy the node4 into a new node16
             ArtNode16 result = new ArtNode16(this);
             // Update the parent pointer to the node16
             ref.change(result);
             // Insert the element into the node16 instead
-            result.add_child(ref, c, child, false);
+            result.add_child(ref, c, child);
         }
     }
 

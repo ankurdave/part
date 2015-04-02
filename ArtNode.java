@@ -54,7 +54,7 @@ abstract class ArtNode extends Node {
 
     public abstract ChildPtr find_child(byte c);
 
-    public abstract void add_child(ChildPtr ref, byte c, Node child, boolean force_clone);
+    public abstract void add_child(ChildPtr ref, byte c, Node child);
 
     public abstract void iter(IterCallback cb);
 
@@ -63,7 +63,8 @@ abstract class ArtNode extends Node {
 
     public abstract Node childAt(int i);
 
-    public void insert(ChildPtr ref, final byte[] key, Object value, int depth, boolean force_clone) {
+    @Override public void insert(ChildPtr ref, final byte[] key, Object value,
+                                 int depth, boolean force_clone) {
         boolean do_clone = force_clone || this.refcount > 1;
 
         // Check if given node has a prefix
@@ -85,7 +86,7 @@ abstract class ArtNode extends Node {
                 // Adjust the prefix of the old node
                 ArtNode this_writable = do_clone ? (ArtNode)this.n_clone() : this;
                 if (partial_len <= Node.MAX_PREFIX_LEN) {
-                    result.add_child(ref, this_writable.partial[prefix_diff], this_writable, false);
+                    result.add_child(ref, this_writable.partial[prefix_diff], this_writable);
                     this_writable.partial_len -= (prefix_diff + 1);
                     System.arraycopy(this_writable.partial, prefix_diff + 1,
                                      this_writable.partial, 0,
@@ -93,7 +94,7 @@ abstract class ArtNode extends Node {
                 } else {
                     this_writable.partial_len -= (prefix_diff+1);
                     final Leaf l = this.minimum();
-                    result.add_child(ref, l.key[depth + prefix_diff], this_writable, false);
+                    result.add_child(ref, l.key[depth + prefix_diff], this_writable);
                     System.arraycopy(l.key, depth + prefix_diff + 1,
                                      this_writable.partial, 0,
                                      Math.min(Node.MAX_PREFIX_LEN, this_writable.partial_len));
@@ -101,7 +102,7 @@ abstract class ArtNode extends Node {
 
                 // Insert the new leaf
                 Leaf l = new Leaf(key, value);
-                result.add_child(ref, key[depth + prefix_diff], l, false);
+                result.add_child(ref, key[depth + prefix_diff], l);
 
                 ref_old.decrement_refcount();
 
@@ -117,11 +118,11 @@ abstract class ArtNode extends Node {
         // Do the insert, either in a child (if a matching child already exists) or in self
         ChildPtr child = this_writable.find_child(key[depth]);
         if (child != null) {
-            Node.insert(child.get(), child, key, value, depth+1, false);
+            Node.insert(child.get(), child, key, value, depth+1, force_clone);
         } else {
             // No child, node goes within us
             Leaf l = new Leaf(key, value);
-            this_writable.add_child(ref, key[depth], l, false);
+            this_writable.add_child(ref, key[depth], l);
             // If `this` was full and `do_clone` is true, we will clone a full node
             // and then immediately delete the clone in favor of a larger node.
             // TODO: avoid this

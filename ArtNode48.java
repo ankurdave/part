@@ -51,28 +51,21 @@ class ArtNode48 extends ArtNode {
         return Node.minimum(child);
      }
 
-    @Override public void add_child(ChildPtr ref, byte c, Node child, boolean force_clone) {
+    @Override public void add_child(ChildPtr ref, byte c, Node child) {
         if (this.num_children < 48) {
             int pos = this.num_children;
 
-            ArtNode48 target = force_clone ? new ArtNode48(this) : this;
-
-            target.children[pos] = child;
+            this.children[pos] = child;
             child.refcount++;
-            target.keys[to_uint(c)] = (byte)(pos + 1);
-            target.num_children++;
-
-            if (force_clone) {
-                // Update the parent pointer to the new node
-                ref.change(target);
-            }
+            this.keys[to_uint(c)] = (byte)(pos + 1);
+            this.num_children++;
         } else {
             // Copy the node48 into a new node256
             ArtNode256 result = new ArtNode256(this);
             // Update the parent pointer to the node256
             ref.change(result);
             // Insert the element into the node256 instead
-            result.add_child(ref, c, child, false);
+            result.add_child(ref, c, child);
         }
     }
 

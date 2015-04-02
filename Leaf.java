@@ -76,8 +76,8 @@ class Leaf extends Node {
                              result.partial, 0,
                              Math.min(Node.MAX_PREFIX_LEN, longest_prefix));
             // Add the leafs to the new node4
-            result.add_child(ref, this.key[depth + longest_prefix], this, false);
-            result.add_child(ref, l2.key[depth + longest_prefix], l2, false);
+            result.add_child(ref, this.key[depth + longest_prefix], this);
+            result.add_child(ref, l2.key[depth + longest_prefix], l2);
 
             ref_old.decrement_refcount();
 

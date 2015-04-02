@@ -52,7 +52,7 @@ class ArtNode16 extends ArtNode {
         return Node.minimum(children[0]);
     }
 
-    @Override public void add_child(ChildPtr ref, byte c, Node child, boolean force_clone) {
+    @Override public void add_child(ChildPtr ref, byte c, Node child) {
         if (this.num_children < 16) {
             // TODO: avoid linear search using intrinsics if available
             int idx;
@@ -60,29 +60,22 @@ class ArtNode16 extends ArtNode {
                 if (to_uint(c) < to_uint(keys[idx])) break;
             }
 
-            ArtNode16 target = force_clone ? new ArtNode16(this) : this;
-
             // Shift to make room
-            System.arraycopy(target.keys, idx, target.keys, idx + 1, target.num_children - idx);
-            System.arraycopy(target.children, idx, target.children, idx + 1, target.num_children - idx);
+            System.arraycopy(this.keys, idx, this.keys, idx + 1, this.num_children - idx);
+            System.arraycopy(this.children, idx, this.children, idx + 1, this.num_children - idx);
 
             // Insert element
-            target.keys[idx] = c;
-            target.children[idx] = child;
+            this.keys[idx] = c;
+            this.children[idx] = child;
             child.refcount++;
-            target.num_children++;
-
-            if (force_clone) {
-                // Update the parent pointer to the new node
-                ref.change(target);
-            }
+            this.num_children++;
         } else {
             // Copy the node16 into a new node48
             ArtNode48 result = new ArtNode48(this);
             // Update the parent pointer to the node48
             ref.change(result);
             // Insert the element into the node48 instead
-            result.add_child(ref, c, child, false);
+            result.add_child(ref, c, child);
         }
     }
 
