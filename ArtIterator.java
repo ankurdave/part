@@ -26,6 +26,10 @@ public class ArtIterator implements Iterator<Tuple2<byte[], Object>> {
             Leaf leaf = (Leaf)elemStack.get(pos);
             byte[] key = leaf.key;
             Object value = leaf.value;
+
+            // Mark the leaf as consumed
+            idxStack.set(pos, 1);
+
             maybeAdvance();
             return new Tuple2<byte[], Object>(key, value);
         } else {
@@ -40,11 +44,15 @@ public class ArtIterator implements Iterator<Tuple2<byte[], Object>> {
     // Postcondition: if _hasNext is true, the top of the stack must contain a leaf
     private void maybeAdvance() {
         // Pop exhausted nodes
-        while (pos >= 0 && elemStack.get(pos).exhausted(idxStack.get(pos) + 1)) {
+        while (pos >= 0 && elemStack.get(pos).exhausted(idxStack.get(pos))) {
             pos -= 1;
+            if (pos >= 0) {
+                // Move on by advancing the exhausted node's parent
+                idxStack.set(pos, idxStack.get(pos) + 1);
+            }
         }
-
         _hasNext = (pos >= 0);
+
         if (_hasNext) {
             // Descend to the next leaf node element
             while (true) {
@@ -54,7 +62,7 @@ public class ArtIterator implements Iterator<Tuple2<byte[], Object>> {
                 } else {
                     // Advance to the next child of this node
                     ArtNode cur = (ArtNode)elemStack.get(pos);
-                    idxStack.set(pos, cur.nextChildAtOrAfter(idxStack.get(pos) + 1));
+                    idxStack.set(pos, cur.nextChildAtOrAfter(idxStack.get(pos)));
                     Node child = cur.childAt(idxStack.get(pos));
 
                     // Push it onto the stack
@@ -62,7 +70,7 @@ public class ArtIterator implements Iterator<Tuple2<byte[], Object>> {
                     while (elemStack.size() <= pos) elemStack.add(null);
                     elemStack.set(pos, child);
                     while (idxStack.size() <= pos) idxStack.add(-1);
-                    idxStack.set(pos, -1);
+                    idxStack.set(pos, 0);
                 }
             }
         }

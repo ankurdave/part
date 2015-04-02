@@ -90,7 +90,7 @@ class Leaf extends Node {
     }
 
     @Override public boolean exhausted(int i) {
-        return true;
+        return i > 0;
     }
 
     @Override public int decrement_refcount() {

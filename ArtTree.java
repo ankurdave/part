@@ -1,9 +1,11 @@
 package com.ankurdave.part;
 
-import scala.Tuple2;
+import java.io.Serializable;
 import java.util.Iterator;
 
-public class ArtTree extends ChildPtr {
+import scala.Tuple2;
+
+public class ArtTree extends ChildPtr implements Serializable {
     public ArtTree() {
         root = null;
     }
@@ -75,7 +77,7 @@ public class ArtTree extends ChildPtr {
     }
 
     public long size() {
-        int n = 0;
+        long n = 0;
         Iterator<Tuple2<byte[], Object>> it = iterator();
         while (it.hasNext()) {
             it.next();

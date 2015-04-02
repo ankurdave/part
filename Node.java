@@ -1,6 +1,8 @@
 package com.ankurdave.part;
 
-abstract class Node {
+import java.io.Serializable;
+
+abstract class Node implements Serializable {
     static final int MAX_PREFIX_LEN = 8;
 
     public Node() {

@@ -104,8 +104,8 @@ class ArtNode48 extends ArtNode {
         return pos;
     }
 
-    @Override public Node childAt(int idx) {
-        return children[idx - 1];
+    @Override public Node childAt(int c) {
+        return children[keys[c] - 1];
     }
 
     @Override public int decrement_refcount() {
