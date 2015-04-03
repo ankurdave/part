@@ -143,7 +143,8 @@ public class ArtCorrectnessTest {
             assert(to_i(deletion_map.search(b[i])) == 3);
         }
 
-        System.out.println("deletion_map had size " + deletion_map.destroy());
+        int deletion_map_size = deletion_map.destroy();
+        System.out.println("deletion_map had size " + deletion_map_size);
 
         System.out.println("a_map had size " + a_map.destroy());
         System.out.println("Leaf: " + Leaf.count + ", "
@@ -152,11 +153,21 @@ public class ArtCorrectnessTest {
                            + "Node48: " + ArtNode48.count + ", "
                            + "Node256: " + ArtNode256.count);
 
-        System.out.println("b_map had size " + b_map.destroy());
+        int b_map_size = b_map.destroy();
+        System.out.println("b_map had size " + b_map_size);
+
+        // b_map should be identical to deletion_map
+        assert(b_map_size == deletion_map_size);
+
         System.out.println("Leaf: " + Leaf.count + ", "
                            + "Node4: " + ArtNode4.count + ", "
                            + "Node16: " + ArtNode16.count + ", "
                            + "Node48: " + ArtNode48.count + ", "
                            + "Node256: " + ArtNode256.count);
+        assert(Leaf.count == 0);
+        assert(ArtNode4.count == 0);
+        assert(ArtNode16.count == 0);
+        assert(ArtNode48.count == 0);
+        assert(ArtNode256.count == 0);
     }
 }
