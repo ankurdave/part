@@ -56,7 +56,7 @@ class ArtNode256 extends ArtNode {
     }
 
     @Override public void remove_child(ChildPtr ref, byte c) {
-        Node.decrement_refcount(children[to_uint(c)]);
+        children[to_uint(c)].decrement_refcount();
         children[to_uint(c)] = null;
         num_children--;
 
@@ -99,7 +99,9 @@ class ArtNode256 extends ArtNode {
         if (--this.refcount <= 0) {
             int freed = 0;
             for (int i = 0; i < 256; i++) {
-                freed += Node.decrement_refcount(children[i]);
+                if (children[i] != null) {
+                    freed += children[i].decrement_refcount();
+                }
             }
             count--;
             // delete this;

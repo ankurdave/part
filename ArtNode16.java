@@ -108,7 +108,7 @@ class ArtNode16 extends ArtNode {
         }
         if (idx == this.num_children) return;
 
-        Node.decrement_refcount(this.children[idx]);
+        children[idx].decrement_refcount();
 
         // Shift to fill the hole
         System.arraycopy(this.keys, idx + 1, this.keys, idx, this.num_children - idx - 1);
@@ -143,7 +143,7 @@ class ArtNode16 extends ArtNode {
         if (--this.refcount <= 0) {
             int freed = 0;
             for (int i = 0; i < this.num_children; i++) {
-                freed += Node.decrement_refcount(children[i]);
+                freed += children[i].decrement_refcount();
             }
             count--;
             // delete this;

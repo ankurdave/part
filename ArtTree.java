@@ -96,7 +96,13 @@ public class ArtTree extends ChildPtr implements Serializable {
     }
 
     public int destroy() {
-        return Node.decrement_refcount(root);
+        if (root != null) {
+            int result = root.decrement_refcount();
+            root = null;
+            return result;
+        } else {
+            return 0;
+        }
     }
 
     Node root;

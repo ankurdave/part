@@ -144,7 +144,7 @@ class ArtNode48 extends ArtNode {
         if (--this.refcount <= 0) {
             int freed = 0;
             for (int i = 0; i < this.num_children; i++) {
-                freed += Node.decrement_refcount(children[i]);
+                freed += children[i].decrement_refcount();
             }
             count--;
             // delete this;

@@ -47,10 +47,6 @@ abstract class Node implements Serializable {
     }
 
     public abstract int decrement_refcount();
-    public static int decrement_refcount(Node n) {
-        if (n == null) return 0;
-        else return n.decrement_refcount();
-    }
 
     public abstract boolean exhausted(int i);
     public static boolean exhausted(Node n, int i) {
