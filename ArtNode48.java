@@ -97,8 +97,9 @@ class ArtNode48 extends ArtNode {
         // Delete the child, leaving a hole in children. We can't shift children
         // because that would require decrementing many elements of keys
         int pos = to_uint(keys[to_uint(c)]);
-        Node.decrement_refcount(children[pos]);
         keys[to_uint(c)] = 0;
+        children[pos - 1].decrement_refcount();
+        children[pos - 1] = null;
         num_children--;
 
         if (num_children == 12) {
