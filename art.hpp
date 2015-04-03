@@ -59,10 +59,12 @@ public:
     static int node_size(Node<V>* n);
 
     static void switch_ref(Node<V>** ref, Node<V>* n) {
+        // First increment the refcount of the new node, in case it would
+        // otherwise have been deleted by the decrement of the old node
+        n->refcount++;
         if (*ref) {
             Node<V>::decrement_refcount(*ref);
         }
-        n->refcount++;
         *ref = n;
     }
 
