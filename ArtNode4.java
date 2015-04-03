@@ -18,6 +18,23 @@ class ArtNode4 extends ArtNode {
         count++;
     }
 
+    public ArtNode4(final ArtNode16 other) {
+        this();
+        assert(other.num_children <= 4);
+        // ArtNode
+        this.num_children = other.num_children;
+        this.partial_len = other.partial_len;
+        System.arraycopy(other.partial, 0,
+                         this.partial, 0,
+                         Math.min(MAX_PREFIX_LEN, this.partial_len));
+        // ArtNode4 from ArtNode16
+        System.arraycopy(other.keys, 0, keys, 0, this.num_children);
+        for (int i = 0; i < this.num_children; i++) {
+            children[i] = other.children[i];
+            children[i].refcount++;
+        }
+    }
+
     @Override public Node n_clone() {
         return new ArtNode4(this);
     }
@@ -58,6 +75,44 @@ class ArtNode4 extends ArtNode {
             ref.change(result);
             // Insert the element into the node16 instead
             result.add_child(ref, c, child);
+        }
+    }
+
+    @Override public void remove_child(ChildPtr ref, byte c) {
+        int idx;
+        for (idx = 0; idx < this.num_children; idx++) {
+            if (c == keys[idx]) break;
+        }
+        if (idx == this.num_children) return;
+
+        Node.decrement_refcount(this.children[idx]);
+
+        // Shift to fill the hole
+        System.arraycopy(this.keys, idx + 1, this.keys, idx, this.num_children - idx - 1);
+        System.arraycopy(this.children, idx + 1, this.children, idx, this.num_children - idx - 1);
+        this.num_children--;
+
+        // Remove nodes with only a single child
+        if (num_children == 1) {
+            if (!(children[0] instanceof Leaf)) {
+                ArtNode child = (ArtNode)children[0];
+                // Concatenate the prefixes
+                int prefix = partial_len;
+                if (prefix < MAX_PREFIX_LEN) {
+                    partial[prefix] = keys[0];
+                    prefix++;
+                }
+                if (prefix < MAX_PREFIX_LEN) {
+                    int sub_prefix = Math.min(child.partial_len, MAX_PREFIX_LEN - prefix);
+                    System.arraycopy(child.partial, 0, partial, prefix, sub_prefix);
+                    prefix += sub_prefix;
+                }
+
+                // Store the prefix in the child
+                System.arraycopy(partial, 0, child.partial, 0, Math.min(prefix, MAX_PREFIX_LEN));
+                child.partial_len += partial_len + 1;
+            }
+            ref.change(children[0]);
         }
     }
 

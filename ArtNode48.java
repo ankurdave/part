@@ -34,6 +34,27 @@ class ArtNode48 extends ArtNode {
         }
     }
 
+    public ArtNode48(final ArtNode256 other) {
+        this();
+        assert(other.num_children <= 48);
+        // ArtNode
+        this.num_children = other.num_children;
+        this.partial_len = other.partial_len;
+        System.arraycopy(other.partial, 0, this.partial, 0,
+                         Math.min(MAX_PREFIX_LEN, this.partial_len));
+
+        // ArtNode48 from ArtNode256
+        int pos = 0;
+        for (int i = 0; i < 256; i++) {
+            if (other.children[i] != null) {
+                keys[i] = (byte)(pos + 1);
+                children[pos] = other.children[i];
+                children[pos].refcount++;
+                pos++;
+            }
+        }
+    }
+
     @Override public Node n_clone() {
         return new ArtNode48(this);
     }
@@ -53,7 +74,10 @@ class ArtNode48 extends ArtNode {
 
     @Override public void add_child(ChildPtr ref, byte c, Node child) {
         if (this.num_children < 48) {
-            int pos = this.num_children;
+            // Have to do a linear scan because deletion may create holes in
+            // children array
+            int pos = 0;
+            while (children[pos] != null) pos++;
 
             this.children[pos] = child;
             child.refcount++;
@@ -66,6 +90,20 @@ class ArtNode48 extends ArtNode {
             ref.change(result);
             // Insert the element into the node256 instead
             result.add_child(ref, c, child);
+        }
+    }
+
+    @Override public void remove_child(ChildPtr ref, byte c) {
+        // Delete the child, leaving a hole in children. We can't shift children
+        // because that would require decrementing many elements of keys
+        int pos = to_uint(keys[to_uint(c)]);
+        Node.decrement_refcount(children[pos]);
+        keys[to_uint(c)] = 0;
+        num_children--;
+
+        if (num_children == 12) {
+            ArtNode16 result = new ArtNode16(this);
+            ref.change(result);
         }
     }
 

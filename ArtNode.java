@@ -56,6 +56,8 @@ abstract class ArtNode extends Node {
 
     public abstract void add_child(ChildPtr ref, byte c, Node child);
 
+    public abstract void remove_child(ChildPtr ref, byte c);
+
     public abstract void iter(IterCallback cb);
 
     // Precondition: isLastChild(i) == false
@@ -128,6 +130,41 @@ abstract class ArtNode extends Node {
             // TODO: avoid this
         }
     }
+
+    @Override public boolean delete(ChildPtr ref, final byte[] key, int depth,
+                                    boolean force_clone) {
+        // Bail if the prefix does not match
+        if (partial_len > 0) {
+            int prefix_len = check_prefix(key, depth);
+            if (prefix_len != Math.min(MAX_PREFIX_LEN, partial_len)) {
+                return false;
+            }
+            depth += partial_len;
+        }
+
+        boolean do_clone = force_clone || this.refcount > 1;
+
+        // Clone self if necessary. Note: this allocation will be wasted if the
+        // key does not exist in the child's subtree
+        ArtNode this_writable = do_clone ? (ArtNode)this.n_clone() : this;
+
+        // Find child node
+        ChildPtr child = this_writable.find_child(key[depth]);
+        if (child == null) return false;
+
+        boolean child_needs_deleting = child.get().delete(child, key, depth + 1, do_clone);
+
+        if (child_needs_deleting) {
+            this_writable.remove_child(ref, key[depth]);
+        }
+
+        if (do_clone) {
+            ref.change(this_writable);
+        }
+
+        return false;
+    }
+
 
     int num_children = 0;
     int partial_len = 0;

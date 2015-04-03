@@ -37,6 +37,9 @@ abstract class Node implements Serializable {
         }
     }
 
+    public abstract boolean delete(ChildPtr ref, final byte[] key, int depth,
+                                   boolean force_clone);
+
     public abstract void iter(IterCallback cb);
     public static void iter(Node n, IterCallback cb) {
         if (n == null) return;

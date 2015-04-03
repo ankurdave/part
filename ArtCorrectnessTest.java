@@ -99,7 +99,6 @@ public class ArtCorrectnessTest {
         int n2 = 0;
         while (it.hasNext()) {
             Tuple2<byte[], Object> elem = it.next();
-            print_bytes(elem._1());
             n2++;
         }
         assert(n2 == t.n);
@@ -123,6 +122,29 @@ public class ArtCorrectnessTest {
             assert(a_res == null || to_i(a_res) == 1);
             assert(to_i(b_map.search(b[i])) == 2);
         }
+
+        ArtTree deletion_map = a_map.snapshot();
+        // for (int i = 0; i < b.length; i++)
+        //     deletion_map.insert(b[i], 3);
+        for (int i = 0; i < a.length; i++)
+            deletion_map.delete(a[i]);
+        assert(deletion_map.root == null);
+
+        for (int i = 0; i < a.length; i++) {
+            assert(to_i(a_map.search(a[i])) == 1);
+            Integer b_res = (Integer)b_map.search(a[i]);
+            assert(b_res == null || to_i(b_res) == 2);
+            assert(deletion_map.search(a[i]) == null);
+        }
+
+        for (int i = 0; i < b.length; i++) {
+            Integer a_res = (Integer)a_map.search(b[i]);
+            assert(a_res == null || to_i(a_res) == 1);
+            assert(to_i(b_map.search(b[i])) == 2);
+            assert(to_i(deletion_map.search(b[i])) == 3);
+        }
+
+        System.out.println("deletion_map had size " + deletion_map.destroy());
 
         System.out.println("a_map had size " + a_map.destroy());
         System.out.println("Leaf: " + Leaf.count + ", "

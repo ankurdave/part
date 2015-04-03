@@ -85,6 +85,11 @@ class Leaf extends Node {
         }
     }
 
+    @Override public boolean delete(ChildPtr ref, final byte[] key, int depth,
+                                    boolean force_clone) {
+        return matches(key);
+    }
+
     @Override public void iter(IterCallback cb) {
         cb.apply(key, value);
     }

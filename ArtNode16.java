@@ -34,6 +34,28 @@ class ArtNode16 extends ArtNode {
         }
     }
 
+    public ArtNode16(final ArtNode48 other) {
+        this();
+        assert(other.num_children <= 16);
+        // ArtNode
+        this.num_children = other.num_children;
+        this.partial_len = other.partial_len;
+        System.arraycopy(other.partial, 0,
+                         this.partial, 0,
+                         Math.min(MAX_PREFIX_LEN, this.partial_len));
+        // ArtNode16 from ArtNode48
+        int child = 0;
+        for (int i = 0; i < 256; i++) {
+            int pos = other.keys[i];
+            if (pos != 0) {
+                keys[child] = (byte)i;
+                children[child] = other.children[pos - 1];
+                children[child].refcount++;
+                child++;
+            }
+        }
+    }
+
     @Override public Node n_clone() {
         return new ArtNode16(this);
     }
@@ -76,6 +98,26 @@ class ArtNode16 extends ArtNode {
             ref.change(result);
             // Insert the element into the node48 instead
             result.add_child(ref, c, child);
+        }
+    }
+
+    @Override public void remove_child(ChildPtr ref, byte c) {
+        int idx;
+        for (idx = 0; idx < this.num_children; idx++) {
+            if (c == keys[idx]) break;
+        }
+        if (idx == this.num_children) return;
+
+        Node.decrement_refcount(this.children[idx]);
+
+        // Shift to fill the hole
+        System.arraycopy(this.keys, idx + 1, this.keys, idx, this.num_children - idx - 1);
+        System.arraycopy(this.children, idx + 1, this.children, idx, this.num_children - idx - 1);
+        this.num_children--;
+
+        if (num_children == 3) {
+            ArtNode4 result = new ArtNode4(this);
+            ref.change(result);
         }
     }
 

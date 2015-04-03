@@ -68,6 +68,12 @@ public class ArtTree extends ChildPtr implements Serializable {
         Node.insert(root, this, key, value, 0, false);
     }
 
+    public void delete(final byte[] key) {
+        if (root != null) {
+            root.delete(this, key, 0, false);
+        }
+    }
+
     public void iter(IterCallback cb) {
         Node.iter(root, cb);
     }
@@ -90,5 +96,5 @@ public class ArtTree extends ChildPtr implements Serializable {
         return Node.decrement_refcount(root);
     }
 
-    private Node root;
+    Node root;
 }

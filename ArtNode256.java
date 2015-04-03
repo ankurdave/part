@@ -55,6 +55,17 @@ class ArtNode256 extends ArtNode {
         child.refcount++;
     }
 
+    @Override public void remove_child(ChildPtr ref, byte c) {
+        Node.decrement_refcount(children[to_uint(c)]);
+        children[to_uint(c)] = null;
+        num_children--;
+
+        if (num_children == 37) {
+            ArtNode48 result = new ArtNode48(this);
+            ref.change(result);
+        }
+    }
+
     @Override public void iter(IterCallback cb) {
         for (int i = 0; i < 256; i++) {
             Node.iter(children[i], cb);
