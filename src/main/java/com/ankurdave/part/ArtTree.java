@@ -55,6 +55,8 @@ public class ArtTree extends ChildPtr implements Serializable {
                     depth += an.partial_len;
                 }
 
+                if (depth >= key.length) return null;
+
                 // Recursively search
                 ChildPtr child = an.find_child(key[depth]);
                 n = (child != null) ? child.get() : null;
@@ -64,7 +66,7 @@ public class ArtTree extends ChildPtr implements Serializable {
         return null;
     }
 
-    public void insert(final byte[] key, Object value) {
+    public void insert(final byte[] key, Object value) throws UnsupportedOperationException {
         Node.insert(root, this, key, value, 0, false);
     }
 

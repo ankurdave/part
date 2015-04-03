@@ -26,7 +26,7 @@ abstract class Node implements Serializable {
     }
 
     public abstract void insert(ChildPtr ref, final byte[] key, Object value, int depth,
-                       boolean force_clone);
+                       boolean force_clone) throws UnsupportedOperationException;
     public static void insert(Node n, ChildPtr ref, final byte[] key, Object value, int depth,
                               boolean force_clone) {
         // If we are at a NULL node, inject a leaf

@@ -47,9 +47,8 @@ class Leaf extends Node {
     }
 
     @Override public void insert(ChildPtr ref, final byte[] key, Object value,
-                       int depth, boolean force_clone) {
+                       int depth, boolean force_clone) throws UnsupportedOperationException {
         boolean clone = force_clone || this.refcount > 1;
-        // Need to replace this leaf with a node
         if (matches(key)) {
             if (clone) {
                 // Updating an existing value, but need to create a new leaf to
@@ -61,17 +60,24 @@ class Leaf extends Node {
                 this.value = value;
             }
         } else {
-            // New value, we must split the leaf into a node4
-            ArtNode4 result = new ArtNode4();
-            Node ref_old = ref.get();
-            ref.change_no_decrement(result);
+            // New value
 
             // Create a new leaf
             Leaf l2 = new Leaf(key, value);
 
             // Determine longest prefix
             int longest_prefix = longest_common_prefix(l2, depth);
+            if (depth + longest_prefix >= this.key.length ||
+                depth + longest_prefix >= key.length) {
+                throw new UnsupportedOperationException("keys cannot be prefixes of other keys");
+            }
+
+            // Split the current leaf into a node4
+            ArtNode4 result = new ArtNode4();
             result.partial_len = longest_prefix;
+            Node ref_old = ref.get();
+            ref.change_no_decrement(result);
+
             System.arraycopy(key, depth,
                              result.partial, 0,
                              Math.min(Node.MAX_PREFIX_LEN, longest_prefix));
