@@ -43,7 +43,7 @@ class ArtNode16 extends ArtNode {
         System.arraycopy(other.partial, 0,
                          this.partial, 0,
                          Math.min(MAX_PREFIX_LEN, this.partial_len));
-        // ArtNode16 from ArtNode48
+        // ArtNode48 from ArtNode16
         int child = 0;
         for (int i = 0; i < 256; i++) {
             int pos = other.keys[i];
@@ -63,7 +63,7 @@ class ArtNode16 extends ArtNode {
     @Override public ChildPtr find_child(byte c) {
         // TODO: avoid linear search using intrinsics if available
         for (int i = 0; i < this.num_children; i++) {
-            if (keys[i] == to_uint(c)) {
+            if (keys[i] == c) {
                 return new ArrayChildPtr(children, i);
             }
         }
