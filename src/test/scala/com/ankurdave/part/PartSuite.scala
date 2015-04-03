@@ -10,7 +10,6 @@ class PartSuite extends FunSuite {
   val max_n = 10000;
   val max_key_len = 100;
   val r = new Random
-  r.setSeed(1)
 
   /** Generates random null-terminated keys. */
   def key_list(): Seq[Seq[Byte]] = {
@@ -35,13 +34,32 @@ class PartSuite extends FunSuite {
     for (i <- 0 until keys.size - holdout) {
       val k = keys(i).toArray
       assert(t.search(k) == null)
-      t.insert(k, 1)
-      assert(t.search(k) == 1)
+      t.insert(k, i)
+      assert(t.search(k) == i)
     }
     assert(t.size == keys.size - holdout);
     for (i <- keys.size - holdout until keys.size) {
       assert(t.search(keys(i).toArray) == null)
     }
+  }
+
+  test("insert, delete") {
+    val t = new ArtTree
+    val keys = key_list().toSet.toSeq
+    for (i <- 0 until keys.size) {
+      val k = keys(i).toArray
+      assert(t.search(k) == null)
+      t.insert(k, i)
+      assert(t.search(k) == i)
+    }
+    assert(t.size == keys.size);
+    for (i <- 0 until keys.size) {
+      val k = keys(i).toArray
+      assert(t.search(k) == i)
+      t.delete(k)
+      assert(t.search(k) == null)
+    }
+    assert(t.size == 0);
   }
 
   test("keys cannot be prefixes of other keys") {

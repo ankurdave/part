@@ -43,7 +43,7 @@ class ArtNode16 extends ArtNode {
         System.arraycopy(other.partial, 0,
                          this.partial, 0,
                          Math.min(MAX_PREFIX_LEN, this.partial_len));
-        // ArtNode48 from ArtNode16
+        // ArtNode16 from ArtNode48
         int child = 0;
         for (int i = 0; i < 256; i++) {
             int pos = other.keys[i];

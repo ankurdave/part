@@ -13,7 +13,9 @@ class ArtNode48 extends ArtNode {
         System.arraycopy(other.keys, 0, keys, 0, 256);
         for (int i = 0; i < other.num_children; i++) {
             children[i] = other.children[i];
-            children[i].refcount++;
+            if (children[i] != null) {
+                children[i].refcount++;
+            }
         }
         count++;
     }
@@ -30,7 +32,9 @@ class ArtNode48 extends ArtNode {
         for (int i = 0; i < this.num_children; i++) {
             keys[to_uint(other.keys[i])] = (byte)(i + 1);
             children[i] = other.children[i];
-            children[i].refcount++;
+            if (children[i] != null) {
+                children[i].refcount++;
+            }
         }
     }
 
@@ -144,7 +148,9 @@ class ArtNode48 extends ArtNode {
         if (--this.refcount <= 0) {
             int freed = 0;
             for (int i = 0; i < this.num_children; i++) {
-                freed += children[i].decrement_refcount();
+                if (children[i] != null) {
+                    freed += children[i].decrement_refcount();
+                }
             }
             count--;
             // delete this;
