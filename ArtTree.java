@@ -70,7 +70,10 @@ public class ArtTree extends ChildPtr implements Serializable {
 
     public void delete(final byte[] key) {
         if (root != null) {
-            root.delete(this, key, 0, false);
+            boolean child_needs_deleting = root.delete(this, key, 0, false);
+            if (child_needs_deleting) {
+                root = null;
+            }
         }
     }
 

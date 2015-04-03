@@ -150,16 +150,16 @@ abstract class ArtNode extends Node {
 
         // Find child node
         ChildPtr child = this_writable.find_child(key[depth]);
-        if (child == null) return false;
+        if (child == null) return false; // when translating to C++, make sure to delete this_writable
+
+        if (do_clone) {
+            ref.change(this_writable);
+        }
 
         boolean child_needs_deleting = child.get().delete(child, key, depth + 1, do_clone);
 
         if (child_needs_deleting) {
             this_writable.remove_child(ref, key[depth]);
-        }
-
-        if (do_clone) {
-            ref.change(this_writable);
         }
 
         return false;

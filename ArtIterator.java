@@ -12,9 +12,11 @@ public class ArtIterator implements Iterator<Tuple2<byte[], Object>> {
     private boolean _hasNext;
 
     public ArtIterator(Node root) {
-        elemStack.add(root);
-        idxStack.add(0);
-        maybeAdvance();
+        if (root != null) {
+            elemStack.add(root);
+            idxStack.add(0);
+            maybeAdvance();
+        }
     }
 
     @Override public boolean hasNext() {

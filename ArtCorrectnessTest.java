@@ -124,11 +124,10 @@ public class ArtCorrectnessTest {
         }
 
         ArtTree deletion_map = a_map.snapshot();
-        // for (int i = 0; i < b.length; i++)
-        //     deletion_map.insert(b[i], 3);
+        for (int i = 0; i < b.length; i++)
+            deletion_map.insert(b[i], 3);
         for (int i = 0; i < a.length; i++)
             deletion_map.delete(a[i]);
-        assert(deletion_map.root == null);
 
         for (int i = 0; i < a.length; i++) {
             assert(to_i(a_map.search(a[i])) == 1);
