@@ -2,6 +2,7 @@ package com.ankurdave.part
 
 import scala.util.Random
 import scala.collection.mutable.WrappedArray
+import scala.collection.JavaConversions._
 
 import org.scalatest.FunSuite
 
@@ -60,6 +61,18 @@ class PartSuite extends FunSuite {
       assert(t.search(k) == null)
     }
     assert(t.size == 0);
+  }
+
+  test("iterator") {
+    val t = new ArtTree
+    val keys = key_list().toSet.toSeq
+    for (i <- 0 until keys.size) {
+      t.insert(keys(i).toArray, i)
+    }
+    val tElems: Seq[(Seq[Byte], Int)] = t.iterator.map { case (k, v) => (k.toSeq, v.asInstanceOf[Int]) }.toSeq
+    import scala.math.Ordering.Implicits._
+    implicit val byteOrdering = Ordering.by[Byte, Int](b => Node.to_uint(b))
+    assert(tElems == keys.zipWithIndex.sorted)
   }
 
   test("keys cannot be prefixes of other keys") {

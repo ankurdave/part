@@ -46,7 +46,7 @@ class ArtNode16 extends ArtNode {
         // ArtNode16 from ArtNode48
         int child = 0;
         for (int i = 0; i < 256; i++) {
-            int pos = other.keys[i];
+            int pos = to_uint(other.keys[i]);
             if (pos != 0) {
                 keys[child] = (byte)i;
                 children[child] = other.children[pos - 1];

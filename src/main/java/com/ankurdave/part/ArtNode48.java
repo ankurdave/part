@@ -141,7 +141,7 @@ class ArtNode48 extends ArtNode {
     }
 
     @Override public Node childAt(int c) {
-        return children[keys[c] - 1];
+        return children[to_uint(keys[c]) - 1];
     }
 
     @Override public int decrement_refcount() {

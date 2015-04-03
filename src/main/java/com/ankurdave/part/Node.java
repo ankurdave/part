@@ -54,8 +54,7 @@ abstract class Node implements Serializable {
         else return n.exhausted(i);
     }
 
-
-    protected static int to_uint(byte b) {
+    static int to_uint(byte b) {
         return ((int)b) & 0xFF;
     }
 

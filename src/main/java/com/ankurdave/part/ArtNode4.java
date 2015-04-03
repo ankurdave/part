@@ -56,7 +56,7 @@ class ArtNode4 extends ArtNode {
         if (this.num_children < 4) {
             int idx;
             for (idx = 0; idx < this.num_children; idx++) {
-                if (to_uint(c) < keys[idx]) break;
+                if (to_uint(c) < to_uint(keys[idx])) break;
             }
 
             // Shift to make room
