@@ -25,15 +25,16 @@ abstract class Node implements Serializable {
         else return n.minimum();
     }
 
-    public abstract void insert(ChildPtr ref, final byte[] key, Object value, int depth,
-                       boolean force_clone) throws UnsupportedOperationException;
-    public static void insert(Node n, ChildPtr ref, final byte[] key, Object value, int depth,
-                              boolean force_clone) {
+    public abstract boolean insert(ChildPtr ref, final byte[] key, Object value, int depth,
+                                   boolean force_clone) throws UnsupportedOperationException;
+    public static boolean insert(Node n, ChildPtr ref, final byte[] key, Object value, int depth,
+                                 boolean force_clone) {
         // If we are at a NULL node, inject a leaf
         if (n == null) {
             ref.change(new Leaf(key, value));
+            return true;
         } else {
-            n.insert(ref, key, value, depth, force_clone);
+            return n.insert(ref, key, value, depth, force_clone);
         }
     }
 

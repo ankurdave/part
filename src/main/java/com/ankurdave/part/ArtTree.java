@@ -6,12 +6,11 @@ import java.util.Iterator;
 import scala.Tuple2;
 
 public class ArtTree extends ChildPtr implements Serializable {
-    public ArtTree() {
-        root = null;
-    }
+    public ArtTree() { }
 
     public ArtTree(final ArtTree other) {
         root = other.root;
+        num_elements = other.num_elements;
     }
 
     public ArtTree snapshot() {
@@ -20,14 +19,15 @@ public class ArtTree extends ChildPtr implements Serializable {
             b.root = Node.n_clone(root);
             b.root.refcount++;
         }
+        b.num_elements = num_elements;
         return b;
     }
 
-    @Override public Node get() {
+    @Override Node get() {
         return root;
     }
 
-    @Override public void set(Node n) {
+    @Override void set(Node n) {
         root = n;
     }
 
@@ -67,14 +67,19 @@ public class ArtTree extends ChildPtr implements Serializable {
     }
 
     public void insert(final byte[] key, Object value) throws UnsupportedOperationException {
-        Node.insert(root, this, key, value, 0, false);
+        if (Node.insert(root, this, key, value, 0, false)) num_elements++;
     }
 
     public void delete(final byte[] key) {
         if (root != null) {
-            boolean child_needs_deleting = root.delete(this, key, 0, false);
-            if (child_needs_deleting) {
-                root = null;
+            boolean child_is_leaf = root instanceof Leaf;
+            boolean do_delete = root.delete(this, key, 0, false);
+            if (do_delete) {
+                num_elements--;
+                if (child_is_leaf) {
+                    // The leaf to delete is the root, so we must remove it
+                    root = null;
+                }
             }
         }
     }
@@ -88,13 +93,7 @@ public class ArtTree extends ChildPtr implements Serializable {
     }
 
     public long size() {
-        long n = 0;
-        Iterator<Tuple2<byte[], Object>> it = iterator();
-        while (it.hasNext()) {
-            it.next();
-            n++;
-        }
-        return n;
+        return num_elements;
     }
 
     public int destroy() {
@@ -107,5 +106,6 @@ public class ArtTree extends ChildPtr implements Serializable {
         }
     }
 
-    Node root;
+    Node root = null;
+    long num_elements = 0;
 }

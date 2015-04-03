@@ -46,8 +46,8 @@ class Leaf extends Node {
         return idx;
     }
 
-    @Override public void insert(ChildPtr ref, final byte[] key, Object value,
-                       int depth, boolean force_clone) throws UnsupportedOperationException {
+    @Override public boolean insert(ChildPtr ref, final byte[] key, Object value,
+                                    int depth, boolean force_clone) throws UnsupportedOperationException {
         boolean clone = force_clone || this.refcount > 1;
         if (matches(key)) {
             if (clone) {
@@ -59,6 +59,7 @@ class Leaf extends Node {
                 // place
                 this.value = value;
             }
+            return false;
         } else {
             // New value
 
@@ -88,6 +89,8 @@ class Leaf extends Node {
             ref_old.decrement_refcount();
 
             // TODO: avoid the increment to self immediately followed by decrement
+
+            return true;
         }
     }
 

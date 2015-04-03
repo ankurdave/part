@@ -65,8 +65,8 @@ abstract class ArtNode extends Node {
 
     public abstract Node childAt(int i);
 
-    @Override public void insert(ChildPtr ref, final byte[] key, Object value,
-                                 int depth, boolean force_clone) {
+    @Override public boolean insert(ChildPtr ref, final byte[] key, Object value,
+                                    int depth, boolean force_clone) {
         boolean do_clone = force_clone || this.refcount > 1;
 
         // Check if given node has a prefix
@@ -108,7 +108,7 @@ abstract class ArtNode extends Node {
 
                 ref_old.decrement_refcount();
 
-                return;
+                return true;
             }
         }
 
@@ -120,7 +120,7 @@ abstract class ArtNode extends Node {
         // Do the insert, either in a child (if a matching child already exists) or in self
         ChildPtr child = this_writable.find_child(key[depth]);
         if (child != null) {
-            Node.insert(child.get(), child, key, value, depth+1, force_clone);
+            return Node.insert(child.get(), child, key, value, depth+1, force_clone);
         } else {
             // No child, node goes within us
             Leaf l = new Leaf(key, value);
@@ -128,6 +128,7 @@ abstract class ArtNode extends Node {
             // If `this` was full and `do_clone` is true, we will clone a full node
             // and then immediately delete the clone in favor of a larger node.
             // TODO: avoid this
+            return true;
         }
     }
 
@@ -156,13 +157,15 @@ abstract class ArtNode extends Node {
             ref.change(this_writable);
         }
 
-        boolean child_needs_deleting = child.get().delete(child, key, depth + 1, do_clone);
+        boolean child_is_leaf = child.get() instanceof Leaf;
+        boolean do_delete = child.get().delete(child, key, depth + 1, do_clone);
 
-        if (child_needs_deleting) {
+        if (do_delete && child_is_leaf) {
+            // The leaf to delete is our child, so we must remove it
             this_writable.remove_child(ref, key[depth]);
         }
 
-        return false;
+        return do_delete;
     }
 
 
