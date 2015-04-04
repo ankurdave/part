@@ -1,36 +1,36 @@
 package com.ankurdave.part;
 
-import scala.Tuple2;
-import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class ArtIterator implements Iterator<Tuple2<byte[], Object>> {
-    private ArrayList<Node> elemStack = new ArrayList<Node>();
-    private ArrayList<Integer> idxStack = new ArrayList<Integer>();
-    private int pos = 0;
-    private boolean _hasNext;
+import scala.Tuple2;
+
+class ArtIterator implements Iterator<Tuple2<byte[], Object>> {
+    private Deque<Node> elemStack = new ArrayDeque<Node>();
+    private Deque<Integer> idxStack = new ArrayDeque<Integer>();
 
     public ArtIterator(Node root) {
         if (root != null) {
-            elemStack.add(root);
-            idxStack.add(0);
+            elemStack.push(root);
+            idxStack.push(0);
             maybeAdvance();
         }
     }
 
     @Override public boolean hasNext() {
-        return _hasNext;
+        return !elemStack.isEmpty();
     }
 
     @Override public Tuple2<byte[], Object> next() {
-        if (_hasNext) {
-            Leaf leaf = (Leaf)elemStack.get(pos);
+        if (hasNext()) {
+            Leaf leaf = (Leaf)elemStack.peek();
             byte[] key = leaf.key;
             Object value = leaf.value;
 
             // Mark the leaf as consumed
-            idxStack.set(pos, 1);
+            idxStack.push(idxStack.pop() + 1);
 
             maybeAdvance();
             return new Tuple2<byte[], Object>(key, value);
@@ -43,36 +43,34 @@ public class ArtIterator implements Iterator<Tuple2<byte[], Object>> {
         throw new UnsupportedOperationException();
     }
 
-    // Postcondition: if _hasNext is true, the top of the stack must contain a leaf
+    // Postcondition: if the stack is nonempty, the top of the stack must contain a leaf
     private void maybeAdvance() {
         // Pop exhausted nodes
-        while (pos >= 0 && elemStack.get(pos).exhausted(idxStack.get(pos))) {
-            pos -= 1;
-            if (pos >= 0) {
+        while (!elemStack.isEmpty() && elemStack.peek().exhausted(idxStack.peek())) {
+            elemStack.pop();
+            idxStack.pop();
+
+            if (!elemStack.isEmpty()) {
                 // Move on by advancing the exhausted node's parent
-                idxStack.set(pos, idxStack.get(pos) + 1);
+                idxStack.push(idxStack.pop() + 1);
             }
         }
-        _hasNext = (pos >= 0);
 
-        if (_hasNext) {
+        if (!elemStack.isEmpty()) {
             // Descend to the next leaf node element
             while (true) {
-                if (elemStack.get(pos) instanceof Leaf) {
+                if (elemStack.peek() instanceof Leaf) {
                     // Done - reached the next element
                     break;
                 } else {
                     // Advance to the next child of this node
-                    ArtNode cur = (ArtNode)elemStack.get(pos);
-                    idxStack.set(pos, cur.nextChildAtOrAfter(idxStack.get(pos)));
-                    Node child = cur.childAt(idxStack.get(pos));
+                    ArtNode cur = (ArtNode)elemStack.peek();
+                    idxStack.push(cur.nextChildAtOrAfter(idxStack.pop()));
+                    Node child = cur.childAt(idxStack.peek());
 
                     // Push it onto the stack
-                    pos += 1;
-                    while (elemStack.size() <= pos) elemStack.add(null);
-                    elemStack.set(pos, child);
-                    while (idxStack.size() <= pos) idxStack.add(-1);
-                    idxStack.set(pos, 0);
+                    elemStack.push(child);
+                    idxStack.push(0);
                 }
             }
         }
