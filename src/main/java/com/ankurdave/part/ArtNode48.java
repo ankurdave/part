@@ -117,15 +117,6 @@ class ArtNode48 extends ArtNode {
         }
     }
 
-    @Override public void iter(IterCallback cb) {
-        for (int i = 0; i < 256; i++) {
-            int idx = to_uint(keys[i]);
-            if (idx != 0) {
-                Node.iter(children[idx - 1], cb);
-            }
-        }
-    }
-
     @Override public boolean exhausted(int c) {
         for (int i = c; i < 256; i++) {
             if (keys[i] != 0) {

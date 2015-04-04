@@ -70,12 +70,6 @@ class ArtNode256 extends ArtNode {
         }
     }
 
-    @Override public void iter(IterCallback cb) {
-        for (int i = 0; i < 256; i++) {
-            Node.iter(children[i], cb);
-        }
-    }
-
     @Override public boolean exhausted(int c) {
         for (int i = c; i < 256; i++) {
             if (children[i] != null) {

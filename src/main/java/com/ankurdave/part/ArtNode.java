@@ -58,8 +58,6 @@ abstract class ArtNode extends Node {
 
     public abstract void remove_child(ChildPtr ref, byte c);
 
-    public abstract void iter(IterCallback cb);
-
     // Precondition: isLastChild(i) == false
     public abstract int nextChildAtOrAfter(int i);
 
@@ -167,7 +165,6 @@ abstract class ArtNode extends Node {
 
         return do_delete;
     }
-
 
     int num_children = 0;
     int partial_len = 0;

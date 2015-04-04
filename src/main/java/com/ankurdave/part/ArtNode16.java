@@ -125,12 +125,6 @@ class ArtNode16 extends ArtNode {
         }
     }
 
-    @Override public void iter(IterCallback cb) {
-        for (int i = 0; i < this.num_children; i++) {
-            Node.iter(children[i], cb);
-        }
-    }
-
     @Override public boolean exhausted(int i) {
         return i >= num_children;
     }

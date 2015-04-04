@@ -84,10 +84,6 @@ public class ArtTree extends ChildPtr implements Serializable {
         }
     }
 
-    public void iter(IterCallback cb) {
-        Node.iter(root, cb);
-    }
-
     public Iterator<Tuple2<byte[], Object>> iterator() {
         return new ArtIterator(root);
     }

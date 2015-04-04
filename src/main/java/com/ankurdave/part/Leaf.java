@@ -99,10 +99,6 @@ class Leaf extends Node {
         return matches(key);
     }
 
-    @Override public void iter(IterCallback cb) {
-        cb.apply(key, value);
-    }
-
     @Override public boolean exhausted(int i) {
         return i > 0;
     }
