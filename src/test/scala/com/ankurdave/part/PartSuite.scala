@@ -9,8 +9,16 @@ import org.scalatest.FunSuite
 class PartSuite extends FunSuite {
 
   val max_n = 10000;
-  val max_key_len = 100;
+  val max_key_len = 10;
   val r = new Random
+
+  // For sorting Seq[Seq[Byte]] lexicographically and bitwise
+  import scala.math.Ordering.Implicits._
+  implicit val byteOrdering = Ordering.by[Byte, Int](b => Node.to_uint(b))
+
+  // For sorting the output of ArtTree#iterator
+  def toSortable[V](iter: Iterator[(Array[Byte], Object)]): Seq[(Seq[Byte], V)] =
+    iter.map { case (k, v) => (k.toSeq, v.asInstanceOf[V]) }.toSeq
 
   /** Generates random null-terminated keys. */
   def key_list(): Seq[Seq[Byte]] = {
@@ -69,10 +77,52 @@ class PartSuite extends FunSuite {
     for (i <- 0 until keys.size) {
       t.insert(keys(i).toArray, i)
     }
-    val tElems: Seq[(Seq[Byte], Int)] = t.iterator.map { case (k, v) => (k.toSeq, v.asInstanceOf[Int]) }.toSeq
-    import scala.math.Ordering.Implicits._
-    implicit val byteOrdering = Ordering.by[Byte, Int](b => Node.to_uint(b))
-    assert(tElems == keys.zipWithIndex.sorted)
+    assert(toSortable[Int](t.iterator) == keys.zipWithIndex.sorted)
+  }
+
+  test("snapshot") {
+    val a = new ArtTree
+    val aKeys = key_list().toSet.toSeq
+    for (k <- aKeys) {
+      a.insert(k.toArray, 1)
+    }
+
+    val b = a.snapshot()
+    assert(toSortable[Int](b.iterator) == toSortable[Int](a.iterator))
+
+    val bKeys = key_list().toSet.toSeq
+    for (k <- bKeys) {
+      b.insert(k.toArray, 2)
+    }
+    def checkB() {
+      var i = 0
+      for (k <- aKeys ++ bKeys) {
+        val bVal = b.search(k.toArray).asInstanceOf[Int]
+        assert(bVal == 1 || bVal == 2)
+        i += 1
+      }
+    }
+    checkB()
+
+    val c = b.snapshot()
+    for (k <- aKeys) {
+      c.delete(k.toArray)
+    }
+    def checkC() {
+      assert(toSortable[Int](c.iterator) ==
+        (bKeys.toSet -- aKeys.toSet).toSeq.map(x => (x, 2)).sorted)
+    }
+    checkB(); checkC()
+
+    val d = c.snapshot()
+    for (k <- bKeys) {
+      d.delete(k.toArray)
+    }
+    def checkD() {
+      assert(d.size == 0)
+      assert(d.iterator.toSeq == Seq.empty)
+    }
+    checkB(); checkC(); checkD()
   }
 
   test("keys cannot be prefixes of other keys") {
