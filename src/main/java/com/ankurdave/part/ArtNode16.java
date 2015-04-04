@@ -75,6 +75,8 @@ class ArtNode16 extends ArtNode {
     }
 
     @Override public void add_child(ChildPtr ref, byte c, Node child) {
+        assert(refcount <= 1);
+
         if (this.num_children < 16) {
             // TODO: avoid linear search using intrinsics if available
             int idx;
@@ -102,6 +104,8 @@ class ArtNode16 extends ArtNode {
     }
 
     @Override public void remove_child(ChildPtr ref, byte c) {
+        assert(refcount <= 1);
+
         int idx;
         for (idx = 0; idx < this.num_children; idx++) {
             if (c == keys[idx]) break;

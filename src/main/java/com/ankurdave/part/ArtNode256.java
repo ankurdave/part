@@ -50,12 +50,16 @@ class ArtNode256 extends ArtNode {
      }
 
     @Override public void add_child(ChildPtr ref, byte c, Node child) {
+        assert(refcount <= 1);
+
         this.num_children++;
         this.children[to_uint(c)] = child;
         child.refcount++;
     }
 
     @Override public void remove_child(ChildPtr ref, byte c) {
+        assert(refcount <= 1);
+
         children[to_uint(c)].decrement_refcount();
         children[to_uint(c)] = null;
         num_children--;

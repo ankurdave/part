@@ -13,4 +13,4 @@ javaOptions += "-Xmx10G"
 fork := true
 
 // Enable assertions
-javaOptions in test += "-ea"
+javaOptions in Test += "-ea"

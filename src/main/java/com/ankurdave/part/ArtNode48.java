@@ -78,6 +78,8 @@ class ArtNode48 extends ArtNode {
      }
 
     @Override public void add_child(ChildPtr ref, byte c, Node child) {
+        assert(refcount <= 1);
+
         if (this.num_children < 48) {
             // Have to do a linear scan because deletion may create holes in
             // children array
@@ -99,6 +101,8 @@ class ArtNode48 extends ArtNode {
     }
 
     @Override public void remove_child(ChildPtr ref, byte c) {
+        assert(refcount <= 1);
+
         // Delete the child, leaving a hole in children. We can't shift children
         // because that would require decrementing many elements of keys
         int pos = to_uint(keys[to_uint(c)]);

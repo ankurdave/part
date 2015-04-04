@@ -53,6 +53,8 @@ class ArtNode4 extends ArtNode {
     }
 
     @Override public void add_child(ChildPtr ref, byte c, Node child) {
+        assert(refcount <= 1);
+
         if (this.num_children < 4) {
             int idx;
             for (idx = 0; idx < this.num_children; idx++) {
@@ -79,12 +81,15 @@ class ArtNode4 extends ArtNode {
     }
 
     @Override public void remove_child(ChildPtr ref, byte c) {
+        assert(refcount <= 1);
+
         int idx;
         for (idx = 0; idx < this.num_children; idx++) {
             if (c == keys[idx]) break;
         }
         if (idx == this.num_children) return;
 
+        assert(children[idx] instanceof Leaf);
         children[idx].decrement_refcount();
 
         // Shift to fill the hole
@@ -94,8 +99,12 @@ class ArtNode4 extends ArtNode {
 
         // Remove nodes with only a single child
         if (num_children == 1) {
-            if (!(children[0] instanceof Leaf)) {
-                ArtNode child = (ArtNode)children[0];
+            Node child = children[0];
+            if (!(child instanceof Leaf)) {
+                if (((ArtNode)child).refcount > 1) {
+                    child = child.n_clone();
+                }
+                ArtNode an_child = (ArtNode)child;
                 // Concatenate the prefixes
                 int prefix = partial_len;
                 if (prefix < MAX_PREFIX_LEN) {
@@ -103,16 +112,16 @@ class ArtNode4 extends ArtNode {
                     prefix++;
                 }
                 if (prefix < MAX_PREFIX_LEN) {
-                    int sub_prefix = Math.min(child.partial_len, MAX_PREFIX_LEN - prefix);
-                    System.arraycopy(child.partial, 0, partial, prefix, sub_prefix);
+                    int sub_prefix = Math.min(an_child.partial_len, MAX_PREFIX_LEN - prefix);
+                    System.arraycopy(an_child.partial, 0, partial, prefix, sub_prefix);
                     prefix += sub_prefix;
                 }
 
                 // Store the prefix in the child
-                System.arraycopy(partial, 0, child.partial, 0, Math.min(prefix, MAX_PREFIX_LEN));
-                child.partial_len += partial_len + 1;
+                System.arraycopy(partial, 0, an_child.partial, 0, Math.min(prefix, MAX_PREFIX_LEN));
+                an_child.partial_len += partial_len + 1;
             }
-            ref.change(children[0]);
+            ref.change(child);
         }
     }
 
