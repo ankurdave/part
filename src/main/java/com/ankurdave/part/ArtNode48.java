@@ -11,7 +11,10 @@ class ArtNode48 extends ArtNode {
     public ArtNode48(final ArtNode48 other) {
         super(other);
         System.arraycopy(other.keys, 0, keys, 0, 256);
-        for (int i = 0; i < other.num_children; i++) {
+        // Copy the children. We have to look at all elements of `children`
+        // rather than just the first num_children elements because `children`
+        // may not be contiguous due to deletion
+        for (int i = 0; i < 48; i++) {
             children[i] = other.children[i];
             if (children[i] != null) {
                 children[i].refcount++;
@@ -32,9 +35,7 @@ class ArtNode48 extends ArtNode {
         for (int i = 0; i < this.num_children; i++) {
             keys[to_uint(other.keys[i])] = (byte)(i + 1);
             children[i] = other.children[i];
-            if (children[i] != null) {
-                children[i].refcount++;
-            }
+            children[i].refcount++;
         }
     }
 
