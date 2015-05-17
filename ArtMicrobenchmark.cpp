@@ -345,6 +345,31 @@ int main() {
     }
 #endif
 
+#ifdef ART
+    {
+        for (int t = 0; t < 10000; t++) {
+            auto begin = std::chrono::high_resolution_clock::now();
+            auto art2 = art.snapshot();
+            for (int i = 0; i < 1000; i++) {
+                unsigned char* str = gen_key();
+                VAL_TYPE* result = art2.search(str, key_len);
+                if (result == NULL) {
+                    art2.insert(str, key_len, gen_value());
+                } else {
+                    delete[] str;
+                    increment_value(*result);
+                }
+            }
+            art2.destroy();
+            auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::high_resolution_clock::now() - begin).count();
+            std::cout << "{'measurement': 'gc', 'datastructure': '" << label_clone
+                      << "', 'x': " << t << ", 'y': " << ns
+                      << ", 'valsize': " << value_len << ", 'inplace': False}," << std::endl;
+        }
+    }
+#endif
+
 // #ifdef ART
 //     {
 //         int art_size = art.destroy();
