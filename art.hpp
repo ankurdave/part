@@ -5,6 +5,7 @@
 #include <functional>
 #include <emmintrin.h>
 #include <cstring>
+#include <iostream>
 
 #define MAX_PREFIX_LEN 8
 
