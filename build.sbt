@@ -14,3 +14,5 @@ fork := true
 
 // Enable assertions
 javaOptions in Test += "-ea"
+
+publishTo := Some(Resolver.file("part", new File("/Users/ankurdave/repos/maven-repo")))

@@ -11,11 +11,17 @@
 // clang++ -Wall -Wextra -O3 -std=c++11 -stdlib=libc++ graph.cpp -o graph
 // ./graph 14167504 < ~/Downloads/uk-2007-05-coalesced-part-00137
 
+struct Edge {
+    long srcId;
+    long dstId;
+    double attr;
+};
+
 class Main {
 public:
     int num_edges, num_vertices;
 
-    ArtTree<ArtTree<double>*> edges;
+    std::vector<Edge> edges;
     ArtTree<double> vertices;
     ArtTree<int> vertex_offsets;
 
@@ -46,14 +52,11 @@ public:
                 vertices.insert(dst_bytes, 8, 1.0);
             }
 
-            ArtTree<double>** cluster = edges.search(src_bytes, 8);
-            if (cluster == NULL) {
-                ArtTree<double>* new_cluster = new ArtTree<double>;
-                new_cluster->insert(dst_bytes, 8, 1.0);
-                edges.insert(src_bytes, 8, new_cluster);
-            } else {
-                (*cluster)->insert(dst_bytes, 8, 1.0);
-            }
+            Edge e;
+            e.srcId = src;
+            e.dstId = dst;
+            e.attr = 1.0;
+            edges.push_back(e);
         }
 
         num_vertices = voffset;
@@ -66,33 +69,18 @@ public:
 
         clock_t start_time = clock();
 
-        edges.iter(std::bind(&Main::scan_outer, this,
-                             std::placeholders::_1,
-                             std::placeholders::_2,
-                             std::placeholders::_3));
+        for (int i = 0; i < num_edges; i++) {
+            Edge& e = edges[i];
+            unsigned char* src_bytes = reinterpret_cast<unsigned char*>(&e.srcId);
+            unsigned char* dst_bytes = reinterpret_cast<unsigned char*>(&e.dstId);
+            double src_attr = *vertices.search(src_bytes, 8);
+            vertex_preagg[*vertex_offsets.search(dst_bytes, 8)] += src_attr * e.attr;
+        }
 
         clock_t end_time = clock();
         printf("Scanned %d edges in %f seconds\n",
                num_edges, (end_time - start_time) / static_cast<double>(CLOCKS_PER_SEC));
 
-    }
-
-    void scan_outer(const unsigned char* key, uint32_t key_len,
-                    ArtTree<double>* inner) {
-        long src_id = *reinterpret_cast<const long*>(key);
-        inner->iter(std::bind(&Main::scan_inner, this,
-                              src_id,
-                              *vertices.search(key, key_len),
-                              std::placeholders::_1,
-                              std::placeholders::_2,
-                              std::placeholders::_3));
-
-    }
-
-    void scan_inner(long src_id, double src_attr, const unsigned char* key,
-                    uint32_t key_len, double edge_attr) {
-        (void)src_id;
-        vertex_preagg[*vertex_offsets.search(key, key_len)] += src_attr * edge_attr;
     }
 };
 

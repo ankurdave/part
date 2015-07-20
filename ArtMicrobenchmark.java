@@ -67,7 +67,7 @@ public class ArtMicrobenchmark {
                                + ", 'valsize': " + value_len + "},");
         }
 
-        {
+        if (false) {
             long begin = System.nanoTime();
             for (int iter = 0; iter < T; iter++) {
                 byte[] str = gen_key();
@@ -85,22 +85,7 @@ public class ArtMicrobenchmark {
             System.out.println(sum);
         }
 
-        {
-            int n = 0;
-            Test t = new Test();
-            long begin = System.nanoTime();
-            art.iter(t);
-            n = t.n;
-            sum += t.sum;
-            long end = System.nanoTime();
-            long ns = end - begin;
-            double rate = n / ((double)ns / (1000 * 1000 * 1000));
-            System.out.println("{'measurement': 'scan', 'datastructure': '" + label
-                               + "', 'y': " + rate + ", 'valsize': "
-                               + value_len + "},");
-        }
-
-        {
+        if (false) {
             for (int m = 1; m <= m_0; m *= 10) {
                 int insertions = 0, updates = 0;
                 long ns = 0;
@@ -133,7 +118,7 @@ public class ArtMicrobenchmark {
                 // << ")"
             }
         }
-        {
+        if (false) {
             for (int m = 1; m <= m_0; m *= 10) {
                 int insertions = 0, updates = 0;
                 long ns = 0;
