@@ -15,15 +15,24 @@ template <typename V>
 int ArtVarNode<V>::count = 0;
 #endif
 
+template <typename V>
+MemoryPool<ArtNode4<V>, 512 * 56> ArtNode4<V>::p4;
+template <typename V>
+MemoryPool<ArtNode16<V>, 128 * 160> ArtNode16<V>::p16;
+template <typename V>
+MemoryPool<ArtNode48<V>, 256 * 656> ArtNode48<V>::p48;
+template <typename V>
+MemoryPool<ArtNode256<V>, 256 * 2064> ArtNode256<V>::p256;
+
 template<typename V>
 Node<V>* Node<V>::clone(const Node<V>* n) {
     if (!n) return NULL;
 
     switch (n->type) {
-    case NODE4: return new ArtNode4<V>(*static_cast<const ArtNode4<V>*>(n));
-    case NODE16: return new ArtNode16<V>(*static_cast<const ArtNode16<V>*>(n));
-    case NODE48: return new ArtNode48<V>(*static_cast<const ArtNode48<V>*>(n));
-    case NODE256: return new ArtNode256<V>(*static_cast<const ArtNode256<V>*>(n));
+    case NODE4: return ArtNode4<V>::create(*static_cast<const ArtNode4<V>*>(n));
+    case NODE16: return ArtNode16<V>::create(*static_cast<const ArtNode16<V>*>(n));
+    case NODE48: return ArtNode48<V>::create(*static_cast<const ArtNode48<V>*>(n));
+    case NODE256: return ArtNode256<V>::create(*static_cast<const ArtNode256<V>*>(n));
     case LEAF: return new Leaf<V>(*static_cast<const Leaf<V>*>(n));
 #ifdef USE_VARNODE
     case VARNODE: {
@@ -191,7 +200,7 @@ void Leaf<V>::insert(Node<V>** ref, const unsigned char *key,
         }
     } else {
         // New value, we must split the leaf into a node4
-        auto result = new ArtNode4<V>;
+        auto result = ArtNode4<V>::create();
         auto ref_old = *ref;
         Node<V>::switch_ref_no_decrement(ref, result);
 
@@ -231,7 +240,7 @@ void ArtNode<V>::insert(Node<V>** ref, const unsigned char *key,
         if (debug) std::cout << "partial_len " << partial_len << "\n";
 
         // Create a new node
-        auto result = new ArtNode4<V>;
+        auto result = ArtNode4<V>::create();
         auto ref_old = *ref;
         Node<V>::switch_ref_no_decrement(ref, result); // don't decrement yet,
                                                        // because doing so might
@@ -308,7 +317,7 @@ void ArtNode4<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child) {
         this->num_children++;
     } else {
         // Copy the node4 into a new node16
-        auto result = new ArtNode16<V>(this);
+        auto result = ArtNode16<V>::create(this);
         // Update the parent pointer to the node16
         Node<V>::switch_ref(ref, result);
         // Insert the element into the node16 instead
@@ -349,7 +358,7 @@ void ArtNode16<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child) {
         this->num_children++;
     } else {
 #ifndef USE_VARNODE
-        auto result = new ArtNode48<V>(this);
+        auto result = ArtNode48<V>::create(this);
 #endif
 #ifdef USE_VARNODE
         void* place = malloc(offsetof(class ArtVarNode<V>, children[32]));
@@ -374,7 +383,7 @@ void ArtNode48<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child) {
         this->num_children++;
     } else {
         // Copy the node48 into a node256
-        auto result = new ArtNode256<V>(this);
+        auto result = ArtNode256<V>::create(this);
         // Update the parent pointer to the node256
         Node<V>::switch_ref(ref, result);
         // Insert the element into the node256 instead
@@ -411,7 +420,7 @@ void ArtVarNode<V>::add_child(Node<V>** ref, unsigned char c, Node<V>* child) {
         this->num_children++;
     } else if (grow_varnode(capacity) >= 256) {
         // Just allocate a Node256
-        auto result = new ArtNode256<V>(this);
+        auto result = ArtNode256<V>::create(this);
         // Update the parent pointer to the node256
         Node<V>::switch_ref(ref, result);
         // Insert the element into the node256 instead

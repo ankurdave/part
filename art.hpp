@@ -6,6 +6,7 @@
 #include <emmintrin.h>
 #include <cstring>
 #include <iostream>
+#include "MemoryPool.h"
 
 #define MAX_PREFIX_LEN 8
 
@@ -210,7 +211,18 @@ template <typename V>
 class ArtNode4 : public ArtNode<V> {
 public:
     static int count;
+    static MemoryPool<ArtNode4<V>, 512 * 56> p4;
 
+    static ArtNode4<V>* create() {
+        auto place = p4.allocate();
+        return new(place) ArtNode4<V>;
+    }
+    static ArtNode4<V>* create(const ArtNode4<V>& other) {
+        auto place = p4.allocate();
+        return new(place) ArtNode4<V>(other);
+    }
+
+private:
     ArtNode4() : ArtNode<V>(NODE4), keys() {
         count++;
     }
@@ -224,6 +236,7 @@ public:
         count++;
     }
 
+public:
     Node<V>** find_child(unsigned char c) {
         for (int i = 0; i < this->num_children; i++) {
             if (keys[i] == c) {
@@ -261,7 +274,7 @@ public:
                 freed += Node<V>::decrement_refcount(children[i]);
             }
             count--;
-            delete this;
+            p4.deallocate(this);
             return freed + sizeof(ArtNode4<V>);
         }
         return 0;
@@ -275,7 +288,22 @@ template <typename V>
 class ArtNode16 : public ArtNode<V> {
 public:
     static int count;
+    static MemoryPool<ArtNode16<V>, 128 * 160> p16;
 
+    static ArtNode16<V>* create() {
+        auto place = p16.allocate();
+        return new(place) ArtNode16<V>;
+    }
+    static ArtNode16<V>* create(const ArtNode16<V>& other) {
+        auto place = p16.allocate();
+        return new(place) ArtNode16<V>(other);
+    }
+    static ArtNode16<V>* create(ArtNode4<V>* other) {
+        auto place = p16.allocate();
+        return new(place) ArtNode16<V>(other);
+    }
+
+private:
     ArtNode16() : ArtNode<V>(NODE16), keys() {
         count++;
     }
@@ -302,6 +330,7 @@ public:
         }
     }
 
+public:
     Node<V>** find_child(unsigned char c) {
         // Compare the key to all 16 stored keys
         __m128i cmp = _mm_cmpeq_epi8(_mm_set1_epi8(c),
@@ -349,7 +378,7 @@ public:
                 freed += Node<V>::decrement_refcount(children[i]);
             }
             count--;
-            delete this;
+            p16.deallocate(this);
             return freed + sizeof(ArtNode16<V>);
         }
         return 0;
@@ -364,7 +393,22 @@ template <typename V>
 class ArtNode48 : public ArtNode<V> {
 public:
     static int count;
+    static MemoryPool<ArtNode48<V>, 256 * 656> p48;
 
+    static ArtNode48<V>* create() {
+        auto place = p48.allocate();
+        return new(place) ArtNode48<V>;
+    }
+    static ArtNode48<V>* create(const ArtNode48<V>& other) {
+        auto place = p48.allocate();
+        return new(place) ArtNode48<V>(other);
+    }
+    static ArtNode48<V>* create(ArtNode16<V>* other) {
+        auto place = p48.allocate();
+        return new(place) ArtNode48<V>(other);
+    }
+
+private:
     ArtNode48() : ArtNode<V>(NODE48), keys() {
         count++;
     }
@@ -392,6 +436,7 @@ public:
         }
     }
 
+public:
     Node<V>** find_child(unsigned char c) {
         int idx = keys[c];
         if (idx) return &children[idx - 1];
@@ -435,7 +480,7 @@ public:
                 freed += Node<V>::decrement_refcount(children[i]);
             }
             count--;
-            delete this;
+            p48.deallocate(this);
             return freed + sizeof(ArtNode48<V>);
         }
         return 0;
@@ -450,7 +495,22 @@ template <typename V>
 class ArtNode256 : public ArtNode<V> {
 public:
     static int count;
+    static MemoryPool<ArtNode256<V>, 256 * 2064> p256;
 
+    static ArtNode256<V>* create() {
+        auto place = p256.allocate();
+        return new(place) ArtNode256<V>;
+    }
+    static ArtNode256<V>* create(const ArtNode256<V>& other) {
+        auto place = p256.allocate();
+        return new(place) ArtNode256<V>(other);
+    }
+    static ArtNode256<V>* create(ArtNode48<V>* other) {
+        auto place = p256.allocate();
+        return new(place) ArtNode256<V>(other);
+    }
+
+private:
     ArtNode256() : ArtNode<V>(NODE256), children() {
         count++;
     }
@@ -483,6 +543,7 @@ public:
     ArtNode256(ArtVarNode<V>* other);
 #endif
 
+public:
     Node<V>** find_child(unsigned char c) {
         if (children[c]) return &children[c];
         return NULL;
@@ -530,7 +591,7 @@ public:
                 }
             }
             count--;
-            delete this;
+            p256.deallocate(this);
             return freed + sizeof(ArtNode256<V>);
         }
         return 0;
