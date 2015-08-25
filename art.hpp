@@ -80,7 +80,18 @@ template <typename V>
 class Leaf : public Node<V> {
 public:
     static int count;
+    static MemoryPool<Leaf<V>, 1024 * 24> pl;
 
+    static Leaf<V>* create(const unsigned char* key, int key_len, V value) {
+        auto place = pl.allocate();
+        return new(place) Leaf<V>(key, key_len, value);
+    }
+    static Leaf<V>* create(const Leaf<V>& other) {
+        auto place = pl.allocate();
+        return new(place) Leaf<V>(other);
+    }
+
+private:
     Leaf(const unsigned char* key, int key_len, V value)
         : Node<V>(LEAF), value(value), key_len(key_len) {
         this->key = key;
@@ -93,6 +104,7 @@ public:
         count++;
     }
 
+public:
     /** Returns 0 if key matches */
     int matches(const unsigned char *key, int key_len) {
         // Fail if the key lengths are different
@@ -133,7 +145,7 @@ public:
             count--;
             // delete[] key;
             // delete[] value;
-            delete this;
+            pl.deallocate(this);
             return sizeof(Leaf<V>);
         }
         return 0;

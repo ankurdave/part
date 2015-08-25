@@ -16,6 +16,8 @@ int ArtVarNode<V>::count = 0;
 #endif
 
 template <typename V>
+MemoryPool<Leaf<V>, 1024 * 24> Leaf<V>::pl;
+template <typename V>
 MemoryPool<ArtNode4<V>, 512 * 56> ArtNode4<V>::p4;
 template <typename V>
 MemoryPool<ArtNode16<V>, 128 * 160> ArtNode16<V>::p16;
@@ -33,7 +35,7 @@ Node<V>* Node<V>::clone(const Node<V>* n) {
     case NODE16: return ArtNode16<V>::create(*static_cast<const ArtNode16<V>*>(n));
     case NODE48: return ArtNode48<V>::create(*static_cast<const ArtNode48<V>*>(n));
     case NODE256: return ArtNode256<V>::create(*static_cast<const ArtNode256<V>*>(n));
-    case LEAF: return new Leaf<V>(*static_cast<const Leaf<V>*>(n));
+    case LEAF: return Leaf<V>::create(*static_cast<const Leaf<V>*>(n));
 #ifdef USE_VARNODE
     case VARNODE: {
         const ArtVarNode<V>* n_var = static_cast<const ArtVarNode<V>*>(n);
@@ -69,7 +71,7 @@ void Node<V>::insert(Node<V>* n, Node<V>** ref, const unsigned char* key, int ke
                      int depth, bool force_clone) {
     // If we are at a NULL node, inject a leaf
     if (!n) {
-        return Node<V>::switch_ref(ref, new Leaf<V>(key, key_len, value));
+        return Node<V>::switch_ref(ref, Leaf<V>::create(key, key_len, value));
     } else {
         switch(n->type) {
         case NODE4: case NODE16: case NODE48: case NODE256: case VARNODE:
@@ -191,7 +193,7 @@ void Leaf<V>::insert(Node<V>** ref, const unsigned char *key,
         if (clone) {
             // Updating an existing value, but need to create a new leaf to
             // reflect the change
-            Node<V>::switch_ref(ref, new Leaf<V>(key, key_len, value));
+            Node<V>::switch_ref(ref, Leaf<V>::create(key, key_len, value));
         } else {
             // Updating an existing value, and safe to make the change in
             // place
@@ -205,7 +207,7 @@ void Leaf<V>::insert(Node<V>** ref, const unsigned char *key,
         Node<V>::switch_ref_no_decrement(ref, result);
 
         // Create a new leaf
-        Leaf<V>* l2 = new Leaf<V>(key, key_len, value);
+        Leaf<V>* l2 = Leaf<V>::create(key, key_len, value);
 
         // Determine longest prefix
         int longest_prefix = longest_common_prefix(l2, depth);
@@ -266,7 +268,7 @@ void ArtNode<V>::insert(Node<V>** ref, const unsigned char *key,
         this_writable->checkpointed = false;
 
         // Insert the new leaf
-        auto l = new Leaf<V>(key, key_len, value);
+        auto l = Leaf<V>::create(key, key_len, value);
         result->add_child(ref, key[depth + prefix_diff], l);
 
         Node<V>::decrement_refcount(ref_old);
@@ -288,7 +290,7 @@ RECURSE_SEARCH:;
         Node<V>::insert(*child, child, key, key_len, value, depth+1, do_clone);
     } else {
         // No child, node goes within us
-        auto l = new Leaf<V>(key, key_len, value);
+        auto l = Leaf<V>::create(key, key_len, value);
         ArtNode<V>::add_child(this_writable, ref, key[depth], l);
         // If `this` was full and `do_clone` is true, we will clone a full node
         // and then immediately delete the clone in favor of a larger node.
