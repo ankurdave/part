@@ -110,6 +110,20 @@ public:
     }
 };
 
+void scan(ArtTree<VAL_TYPE> art, std::string label) {
+    int n = 0;
+    auto begin = std::chrono::high_resolution_clock::now();
+    art.iter(&Test::iter_test);
+    n = Test::n;
+    auto end = std::chrono::high_resolution_clock::now();
+    auto dur = end - begin;
+    auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(dur).count();
+    auto rate = n / ((double)ns / (1000 * 1000 * 1000));
+    std::cout << "{'measurement': 'scan', 'datastructure': '" << label
+              << "', 'y': " << rate << ", 'valsize': "
+              << value_len << "}," << std::endl;
+}
+
 inline int max(int a, int b) { return (a > b) ? a : b; }
 
 int Test::n = 0;
@@ -156,6 +170,9 @@ int main() {
         vector_v[i] = gen_value();
 #endif
     }
+    art.reorder_leaves();
+    printf("Average stride: %f\n", art.avg_stride());
+    printf("size of leaf %d\n", sizeof(Leaf<VAL_TYPE>));
 
     std::cout << "{'measurement': 'memory', 'datastructure': '" << label
               << "', 'y': " << getCurrentRSS() << ", 'valsize': "
@@ -201,47 +218,9 @@ int main() {
     }
 #endif
 
-    {
-        int n = 0;
-        auto begin = std::chrono::high_resolution_clock::now();
-#ifdef ART
-        art.iter(&Test::iter_test);
-        n = Test::n;
-#endif
-#ifdef STDMAP
-        for (auto it = map.begin(); it != map.end(); it++) {
-            n++;
-            sum += it->first[0] +
-#ifdef BIG_VAL
-                it->second[0]
-#endif
-#ifndef BIG_VAL
-                it->second
-#endif
-                ;
-        }
-#endif
-#ifdef VECTOR
-        for (int i = 0; i < vector_k.size(); i++) {
-            n++;
-            sum += vector_k[i][0] +
-#ifdef BIG_VAL
-                vector_v[i][0]
-#endif
-#ifndef BIG_VAL
-                vector_v[i]
-#endif
-                ;
-        }
-#endif
-        auto end = std::chrono::high_resolution_clock::now();
-        auto dur = end - begin;
-        auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(dur).count();
-        auto rate = n / ((double)ns / (1000 * 1000 * 1000));
-        std::cout << "{'measurement': 'scan', 'datastructure': '" << label
-                  << "', 'y': " << rate << ", 'valsize': "
-                  << value_len << "}," << std::endl;
-    }
+    scan(art, label);
+
+    return 0;
 
 #ifndef VECTOR
     {

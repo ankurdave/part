@@ -61,6 +61,9 @@ public:
 
         num_vertices = voffset;
         vertex_preagg = std::vector<double>(num_vertices, 0.0);
+
+        vertices.reorder_leaves();
+        vertex_offsets.reorder_leaves();
     }
 
     void scan() {
@@ -80,6 +83,10 @@ public:
         clock_t end_time = clock();
         printf("Scanned %d edges in %f seconds\n",
                num_edges, (end_time - start_time) / static_cast<double>(CLOCKS_PER_SEC));
+
+        printf("Average stride: %f\n", vertices.avg_stride());
+        vertices.reorder_leaves();
+        printf("Average stride: %f\n", vertices.avg_stride());
 
     }
 };

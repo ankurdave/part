@@ -51,6 +51,7 @@ public:
     bool checkpointed;
 
     static Node<V>* clone(const Node<V>* n);
+    static Node<V>* reorder_leaves(Node<V>* n);
     static const Leaf<V>* minimum(const Node<V>* n);
     static void insert(Node<V>* n, Node<V>** ref, const unsigned char* key, int key_len, V value,
                        int depth, bool force_clone);
@@ -80,7 +81,7 @@ template <typename V>
 class Leaf : public Node<V> {
 public:
     static int count;
-    static MemoryPool<Leaf<V>, 1024 * 24> pl;
+    static MemoryPool<Leaf<V>, 1024 * 40> pl;
 
     static Leaf<V>* create(const unsigned char* key, int key_len, V value) {
         auto place = pl.allocate();
@@ -94,13 +95,13 @@ public:
 private:
     Leaf(const unsigned char* key, int key_len, V value)
         : Node<V>(LEAF), value(value), key_len(key_len) {
-        this->key = key;
+        memcpy(this->key, key, key_len);
         count++;
     }
 
     Leaf(const Leaf<V>& other)
         : Node<V>(other), value(other.value), key_len(other.key_len) {
-        key = other.key;
+        memcpy(this->key, other.key, key_len);
         count++;
     }
 
@@ -140,6 +141,11 @@ public:
         cb(this, depth);
     }
 
+    Leaf<V>* reorder_leaves() {
+        return Leaf<V>::create(key, key_len, value);
+        // return this;
+    }
+
     int decrement_refcount() {
         if (--this->refcount <= 0) {
             count--;
@@ -153,7 +159,7 @@ public:
 
     V value;
     uint32_t key_len;
-    const unsigned char *key;
+    unsigned char key[8];
 };
 
 template <typename V>
@@ -279,6 +285,13 @@ public:
         }
     }
 
+    ArtNode4<V>* reorder_leaves() {
+        for (int i = 0; i < this->num_children; i++) {
+            children[i] = Node<V>::reorder_leaves(children[i]);
+        }
+        return this;
+    }
+
     int decrement_refcount() {
         if (--this->refcount <= 0) {
             int freed = 0;
@@ -383,6 +396,13 @@ public:
         }
     }
 
+    ArtNode16<V>* reorder_leaves() {
+        for (int i = 0; i < this->num_children; i++) {
+            children[i] = Node<V>::reorder_leaves(children[i]);
+        }
+        return this;
+    }
+
     int decrement_refcount() {
         if (--this->refcount <= 0) {
             int freed = 0;
@@ -483,6 +503,16 @@ public:
                 }
             }
         }
+    }
+
+    ArtNode48<V>* reorder_leaves() {
+        for (int i = 0; i < 256; i++) {
+            int idx = keys[i];
+            if (idx) {
+                children[idx - 1] = Node<V>::reorder_leaves(children[idx - 1]);
+            }
+        }
+        return this;
     }
 
     int decrement_refcount() {
@@ -593,6 +623,14 @@ public:
         }
     }
 
+    ArtNode256<V>* reorder_leaves() {
+        for (int i = 0; i < 256; i++) {
+            if (children[i]) {
+                children[i] = Node<V>::reorder_leaves(children[i]);
+            }
+        }
+        return this;
+    }
 
     int decrement_refcount() {
         if (--this->refcount == 0) {
@@ -711,6 +749,14 @@ public:
         return b;
     }
 
+    ArtTree reorder_leaves() {
+        ArtTree<V> b;
+        if (root) {
+            b.root = Node<V>::reorder_leaves(root);
+        }
+        return b;
+    }
+
     V* search(const unsigned char* key, int key_len) {
         Node<V>* n = root;
         int prefix_len, depth = 0;
@@ -805,6 +851,34 @@ public:
     int destroy() {
         if (root) return Node<V>::decrement_refcount(root);
         else return 0;
+    }
+
+    double avg_stride() {
+        long total_stride = 0;
+        long num_nodes = 0;
+        Node<V>* n_prev = NULL;
+        Node<V>::iter_nodes(root, [&total_stride, &num_nodes, &n_prev](Node<V>* n, int depth)->bool {
+                (void) depth;
+                if (n->type == LEAF) {
+                    if (n_prev != NULL) {
+                        long abs_stride = (char*)n - (char*)n_prev;
+//                        if (abs_stride < 0) abs_stride = -abs_stride;
+                        total_stride += abs_stride;
+                        if (num_nodes % 100000 == 0) {
+                            printf("%ld ", abs_stride);
+                        }
+                        if (abs_stride != 24 && num_nodes % 10 == 0) {
+                            printf("%ld ", abs_stride);
+                        }
+
+                    }
+                    n_prev = n;
+                    num_nodes++;
+                }
+                return true;
+            }, 0);
+        printf("\nnum nodes %ld\n", num_nodes);
+        return (double)total_stride / num_nodes;
     }
 
 //private:

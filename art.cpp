@@ -16,7 +16,7 @@ int ArtVarNode<V>::count = 0;
 #endif
 
 template <typename V>
-MemoryPool<Leaf<V>, 1024 * 24> Leaf<V>::pl;
+MemoryPool<Leaf<V>, 1024 * 40> Leaf<V>::pl;
 template <typename V>
 MemoryPool<ArtNode4<V>, 512 * 56> ArtNode4<V>::p4;
 template <typename V>
@@ -43,6 +43,21 @@ Node<V>* Node<V>::clone(const Node<V>* n) {
         return new(place) ArtVarNode<V>(n_var->capacity, *n_var);
     }
 #endif
+    }
+
+    abort();
+}
+
+template<typename V>
+Node<V>* Node<V>::reorder_leaves(Node<V>* n) {
+    if (!n) return NULL;
+
+    switch (n->type) {
+    case NODE4: return static_cast<ArtNode4<V>*>(n)->reorder_leaves();
+    case NODE16: return static_cast<ArtNode16<V>*>(n)->reorder_leaves();
+    case NODE48: return static_cast<ArtNode48<V>*>(n)->reorder_leaves();
+    case NODE256: return static_cast<ArtNode256<V>*>(n)->reorder_leaves();
+    case LEAF: return static_cast<Leaf<V>*>(n)->reorder_leaves();
     }
 
     abort();
