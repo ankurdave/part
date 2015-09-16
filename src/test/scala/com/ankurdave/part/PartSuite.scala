@@ -80,6 +80,27 @@ class PartSuite extends FunSuite {
     assert(toSortable[Int](t.iterator) == keys.zipWithIndex.sorted)
   }
 
+  test("prefix iterator") {
+    val t = new ArtTree
+    val keys = key_list().toSet.toSeq
+    for (i <- 0 until keys.size) {
+      t.insert(keys(i).toArray, i)
+    }
+    // Whole tree
+    assert(toSortable[Int](t.prefixIterator(Array.empty[Byte])) == keys.zipWithIndex.sorted)
+    // Each key
+    for (i <- 0 until keys.size) {
+      assert(toSortable[Int](t.prefixIterator(keys(i).toArray)) == Seq((keys(i), i)))
+    }
+    // Random prefixes
+    for (trial <- 0 until 100) {
+      val prefix_len = r.nextInt(max_key_len)
+      val prefix = Seq.fill(prefix_len) { (r.nextInt(255) + 1).toByte }
+      assert(toSortable[Int](t.prefixIterator(prefix.toArray)) ==
+        keys.zipWithIndex.sorted.filter { case (k, i) => k.startsWith(prefix) })
+    }
+  }
+
   test("snapshot") {
     val a = new ArtTree
     val aKeys = key_list().toSet.toSeq

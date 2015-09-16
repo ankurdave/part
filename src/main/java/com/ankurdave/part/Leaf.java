@@ -31,6 +31,16 @@ class Leaf extends Node {
         return true;
     }
 
+    public boolean prefix_matches(final byte[] prefix) {
+        if (this.key.length < prefix.length) return false;
+        for (int i = 0; i < prefix.length; i++) {
+            if (this.key[i] != prefix[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override public Leaf minimum() {
         return this;
     }
