@@ -3,15 +3,34 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#ifdef HT
 #include <unordered_map>
+#endif
+#ifdef VECTOR
 #include <vector>
+#endif
+#ifdef ART
 #include "art.cpp"
+#endif
+#ifdef RB
 #include <map>
+#endif
+#ifdef BTREE
 #include "btree_map.h"
+#endif
 #include "getRSS.c"
-// clang++ -Wall -Wextra -O3 -c -std=c++11 -stdlib=libc++ art.cpp -o art.o && clang++ -Wall -Wextra -O3 -std=c++11 -stdlib=libc++ -o ArtMicrobenchmark art.o ArtMicrobenchmark.cpp && ./ArtMicrobenchmark
+#ifdef ZIPF
+#include "discreteZipf.cpp"
+#endif
+// clang++ -DART -Wall -Wextra -Wno-invalid-offsetof -O3 -std=c++11 -stdlib=libc++ -o ArtMicrobenchmark -g ArtMicrobenchmark.cpp && ./ArtMicrobenchmark
 
-#define RANDOM
+// Preprocessor macros - define using -D
+// data structure: {ART, HT, RB, BTREE}
+// batch size (int): BATCH_SIZE
+// value size: {BIG_VAL,}
+// key length (int in [4, 32]): KEY_LEN
+// key distribution: {RANDOM, SEQUENTIAL, ZIPF}
+// Zipf distribution skew, if ZIPF is defined (double in [1.0, 3.0]): ZIPF_ALPHA
 
 #if defined(HT) || defined(RB) || defined(BTREE)
 #define STDMAP
@@ -28,39 +47,51 @@ const int value_len = 4;
 
 const int m_0 = 10000000;
 const int T =   1000000;
-const int key_len = 4;
 const long max_duration = (long)5 * 1000 * 1000 * 1000;
 long cur_seq_key = 0;
 long cur_seq_string_key = 0;
+#ifdef ZIPF
+discreteZipf z(ZIPF_ALPHA, 256);
+#endif
 
 unsigned char* gen_key() {
-    unsigned char* str = new unsigned char[key_len];
+    unsigned char* str = new unsigned char[KEY_LEN];
 #ifdef RANDOM
-    for (int j = 0; j < key_len; j++) {
+    for (int j = 0; j < KEY_LEN; j++) {
         str[j] = static_cast<unsigned char>(rand() % 256);
     }
 #endif
 #ifdef SEQUENTIAL
-    for (int j = 0; j < key_len; j++) {
+    for (int j = 0; j < KEY_LEN; j++) {
         str[j] = reinterpret_cast<const unsigned char*>(&cur_seq_key)[j];
     }
     cur_seq_key++;
+#endif
+#ifdef ZIPF
+    for (int j = 0; j < KEY_LEN; j++) {
+        str[j] = static_cast<unsigned char>(z.next());
+    }
 #endif
     return str;
 }
 
 std::string gen_string_key() {
-    std::string str(key_len, 0);
+    std::string str(KEY_LEN, 0);
 #ifdef RANDOM
-    for (int j = 0; j < key_len; j++) {
+    for (int j = 0; j < KEY_LEN; j++) {
         str[j] = static_cast<char>(rand() % 256);
     }
 #endif
 #ifdef SEQUENTIAL
-    for (int j = 0; j < key_len; j++) {
+    for (int j = 0; j < KEY_LEN; j++) {
         str[j] = reinterpret_cast<const char*>(&cur_seq_string_key)[j];
     }
     cur_seq_string_key++;
+#endif
+#ifdef ZIPF
+    for (int j = 0; j < KEY_LEN; j++) {
+        str[j] = static_cast<char>(z.next());
+    }
 #endif
     return str;
 }
@@ -160,7 +191,7 @@ int main() {
 #endif
     for (int i = 0; i < m_0; i++) {
 #ifdef ART
-        art.insert(gen_key(), key_len, gen_value());
+        art.insert(gen_key(), KEY_LEN, gen_value());
 #endif
 #ifdef STDMAP
         map.insert(std::make_pair(gen_string_key(), gen_value()));
@@ -170,13 +201,18 @@ int main() {
         vector_v[i] = gen_value();
 #endif
     }
-    art.reorder_leaves();
-    printf("Average stride: %f\n", art.avg_stride());
-    printf("size of leaf %d\n", sizeof(Leaf<VAL_TYPE>));
 
     std::cout << "{'measurement': 'memory', 'datastructure': '" << label
               << "', 'y': " << getCurrentRSS() << ", 'valsize': "
               << value_len << "}," << std::endl;
+
+#ifdef ART_REORDER_LEAVES
+    art.reorder_leaves();
+    // printf("Average stride: %f\n", art.avg_stride());
+    // printf("size of leaf %d\n", sizeof(Leaf<VAL_TYPE>));
+#endif
+
+    scan(art, label);
 
 #ifndef VECTOR
     {
@@ -184,7 +220,7 @@ int main() {
         for (int iter = 0; iter < T; iter++) {
 #ifdef ART
             unsigned char* str = gen_key();
-            VAL_TYPE* result = art.search(str, key_len);
+            VAL_TYPE* result = art.search(str, KEY_LEN);
             if (result) {
 #ifdef BIG_VAL
                 sum += (*result)[0];
@@ -218,13 +254,8 @@ int main() {
     }
 #endif
 
-    scan(art, label);
-
-    return 0;
-
 #ifndef VECTOR
     {
-        for (int m = 1; m <= m_0; m *= 10) {
             int insertions = 0, updates = 0;
             long ns = 0;
             long allocd = 0;
@@ -237,12 +268,12 @@ int main() {
 #ifdef STDMAP
                 auto map2 = map;
 #endif
-                for (int i = 0; i < m; i++) {
+                for (int i = 0; i < BATCH_SIZE; i++) {
 #ifdef ART
                     unsigned char* str = gen_key();
-                    VAL_TYPE* result = art2.search(str, key_len);
+                    VAL_TYPE* result = art2.search(str, KEY_LEN);
                     if (result == NULL) {
-                        art2.insert(str, key_len, gen_value());
+                        art2.insert(str, KEY_LEN, gen_value());
                         insertions++;
                     } else {
                         delete[] str;
@@ -270,28 +301,26 @@ int main() {
 #endif
                 num_trials++;
             }
-            auto rate = num_trials * m / ((double)ns / (1000 * 1000 * 1000));
+            auto rate = num_trials * BATCH_SIZE / ((double)ns / (1000 * 1000 * 1000));
             std::cout << "{'measurement': 'insert', 'datastructure': '" << label_clone
-                      << "', 'x': " << m << ", 'y': " << rate << ", 'valsize': "
+                      << "', 'x': " << BATCH_SIZE << ", 'y': " << rate << ", 'valsize': "
                       << value_len << ", 'inplace': False}," << std::endl;
                       // << " (insert: " << insertions << ", update: " << updates
                       // << ", alloc'd bytes per elem: " << (double)allocd / (num_trials * m)
                       // << ")"
-        }
     }
     {
-        for (int m = 1; m <= m_0; m *= 10) {
             int insertions = 0, updates = 0;
             long ns = 0;
             int num_trials = 0;
             while (ns < max_duration) {
                 auto begin = std::chrono::high_resolution_clock::now();
-                for (int i = 0; i < m; i++) {
+                for (int i = 0; i < BATCH_SIZE; i++) {
 #ifdef ART
                     unsigned char* str = gen_key();
-                    VAL_TYPE* result = art.search(str, key_len);
+                    VAL_TYPE* result = art.search(str, KEY_LEN);
                     if (result == NULL) {
-                        art.insert(str, key_len, gen_value());
+                        art.insert(str, KEY_LEN, gen_value());
                         insertions++;
                     } else {
                         delete[] str;
@@ -316,36 +345,10 @@ int main() {
                     std::chrono::high_resolution_clock::now() - begin).count();
                 num_trials++;
             }
-            auto rate = num_trials * m / ((double)ns / (1000 * 1000 * 1000));
+            auto rate = num_trials * BATCH_SIZE / ((double)ns / (1000 * 1000 * 1000));
             std::cout << "{'measurement': 'insert', 'datastructure': '" << label
-                      << "', 'x': " << m << ", 'y': " << rate << ", 'valsize': "
+                      << "', 'x': " << BATCH_SIZE << ", 'y': " << rate << ", 'valsize': "
                       << value_len << ", 'inplace': True}," << std::endl;
-        }
-    }
-#endif
-
-#ifdef ART
-    {
-        for (int t = 0; t < 10000; t++) {
-            auto begin = std::chrono::high_resolution_clock::now();
-            auto art2 = art.snapshot();
-            for (int i = 0; i < 1000; i++) {
-                unsigned char* str = gen_key();
-                VAL_TYPE* result = art2.search(str, key_len);
-                if (result == NULL) {
-                    art2.insert(str, key_len, gen_value());
-                } else {
-                    delete[] str;
-                    increment_value(*result);
-                }
-            }
-            art2.destroy();
-            auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-                std::chrono::high_resolution_clock::now() - begin).count();
-            std::cout << "{'measurement': 'gc', 'datastructure': '" << label_clone
-                      << "', 'x': " << t << ", 'y': " << ns
-                      << ", 'valsize': " << value_len << ", 'inplace': False}," << std::endl;
-        }
     }
 #endif
 
@@ -357,7 +360,7 @@ int main() {
 // #endif
 
 #ifdef ART
-    std::cout << Test::sum << std::endl;
+    std::cout << "# " << Test::sum << std::endl;
 #endif
-    std::cout << sum << std::endl;
+    std::cout << "# " << sum << std::endl;
 }
