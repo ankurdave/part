@@ -142,7 +142,9 @@ public:
     }
 
     Leaf<V>* reorder_leaves() {
-        return Leaf<V>::create(key, key_len, value);
+        auto new_leaf = Leaf<V>::create(key, key_len, value);
+        new_leaf->refcount++;
+        return new_leaf;
         // return this;
     }
 
