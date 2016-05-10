@@ -52,7 +52,7 @@ template <typename T, size_t BlockSize>
 MemoryPool<T, BlockSize>::MemoryPool(const MemoryPool& memoryPool)
 noexcept :
 MemoryPool()
-{}
+{(void)memoryPool;}
 
 
 
@@ -73,7 +73,7 @@ template<class U>
 MemoryPool<T, BlockSize>::MemoryPool(const MemoryPool<U>& memoryPool)
 noexcept :
 MemoryPool()
-{}
+{(void)memoryPool;}
 
 
 
@@ -151,6 +151,8 @@ template <typename T, size_t BlockSize>
 inline typename MemoryPool<T, BlockSize>::pointer
 MemoryPool<T, BlockSize>::allocate(size_type n, const_pointer hint)
 {
+  (void)n;
+  (void)hint;
   if (freeSlots_ != nullptr) {
     pointer result = reinterpret_cast<pointer>(freeSlots_);
     freeSlots_ = freeSlots_->next;
@@ -169,6 +171,7 @@ template <typename T, size_t BlockSize>
 inline void
 MemoryPool<T, BlockSize>::deallocate(pointer p, size_type n)
 {
+  (void)n;
   if (p != nullptr) {
     reinterpret_cast<slot_pointer_>(p)->next = freeSlots_;
     freeSlots_ = reinterpret_cast<slot_pointer_>(p);

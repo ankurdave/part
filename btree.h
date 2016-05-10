@@ -411,6 +411,7 @@ struct btree_binary_search_plain_compare {
 template <typename K, typename N, typename CompareTo>
 struct btree_binary_search_compare_to {
   static int lower_bound(const K &k, const N &n, CompareTo comp)  {
+    (void)comp;
     return n.binary_search_compare_to(k, 0, n.count(), CompareTo());
   }
   static int upper_bound(const K &k, const N &n, CompareTo comp)  {
@@ -860,8 +861,8 @@ class btree : public Params::key_compare {
   typedef typename node_type::root_fields root_fields;
   typedef typename Params::is_key_compare_to is_key_compare_to;
 
-  friend class btree_internal_locate_plain_compare;
-  friend class btree_internal_locate_compare_to;
+  friend struct btree_internal_locate_plain_compare;
+  friend struct btree_internal_locate_compare_to;
   typedef typename if_<
     is_key_compare_to::value,
     btree_internal_locate_compare_to,

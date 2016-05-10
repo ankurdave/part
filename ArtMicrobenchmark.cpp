@@ -46,8 +46,10 @@ const int value_len = 4;
 #endif
 
 const int m_0 = 10000000;
+#ifndef VECTOR
 const int T =   1000000;
 const long max_duration = (long)5 * 1000 * 1000 * 1000;
+#endif
 long cur_seq_key = 0;
 long cur_seq_string_key = 0;
 #ifdef ZIPF
@@ -141,20 +143,6 @@ public:
     }
 };
 
-void scan(ArtTree<VAL_TYPE> art, std::string label) {
-    int n = 0;
-    auto begin = std::chrono::high_resolution_clock::now();
-    art.iter(&Test::iter_test);
-    n = Test::n;
-    auto end = std::chrono::high_resolution_clock::now();
-    auto dur = end - begin;
-    auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(dur).count();
-    auto rate = n / ((double)ns / (1000 * 1000 * 1000));
-    std::cout << "{'measurement': 'scan', 'datastructure': '" << label
-              << "', 'y': " << rate << ", 'valsize': "
-              << value_len << "}," << std::endl;
-}
-
 inline int max(int a, int b) { return (a > b) ? a : b; }
 
 int Test::n = 0;
@@ -187,7 +175,6 @@ int main() {
     std::vector<std::string> vector_k(m_0);
     std::vector<VAL_TYPE> vector_v(m_0);
     auto label = "vector";
-    auto label_clone = "vector";
 #endif
     for (int i = 0; i < m_0; i++) {
 #ifdef ART
@@ -208,11 +195,49 @@ int main() {
 
 #ifdef ART_REORDER_LEAVES
     art.reorder_leaves();
-    // printf("Average stride: %f\n", art.avg_stride());
-    // printf("size of leaf %d\n", sizeof(Leaf<VAL_TYPE>));
 #endif
 
-    scan(art, label);
+    {
+        int n = 0;
+        auto begin = std::chrono::high_resolution_clock::now();
+#ifdef ART
+        art.iter(&Test::iter_test);
+        n = Test::n;
+#endif
+#ifdef STDMAP
+        for (auto it = map.begin(); it != map.end(); it++) {
+            n++;
+            sum += it->first[0] +
+#ifdef BIG_VAL
+                it->second[0]
+#endif
+#ifndef BIG_VAL
+                it->second
+#endif
+                ;
+        }
+#endif
+#ifdef VECTOR
+        for (std::vector<std::string>::size_type i = 0; i < vector_k.size(); i++) {
+            n++;
+            sum += vector_k[i][0] +
+#ifdef BIG_VAL
+                vector_v[i][0]
+#endif
+#ifndef BIG_VAL
+                vector_v[i]
+#endif
+                ;
+        }
+#endif
+        auto end = std::chrono::high_resolution_clock::now();
+        auto dur = end - begin;
+        auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(dur).count();
+        auto rate = n / ((double)ns / (1000 * 1000 * 1000));
+        std::cout << "{'measurement': 'scan', 'datastructure': '" << label
+                  << "', 'y': " << rate << ", 'valsize': "
+                  << value_len << "}," << std::endl;
+    }
 
 #ifndef VECTOR
     {
@@ -258,7 +283,6 @@ int main() {
     {
             int insertions = 0, updates = 0;
             long ns = 0;
-            long allocd = 0;
             int num_trials = 0;
             while (ns < max_duration) {
                 auto begin = std::chrono::high_resolution_clock::now();
@@ -297,7 +321,7 @@ int main() {
                 ns += std::chrono::duration_cast<std::chrono::nanoseconds>(
                     std::chrono::high_resolution_clock::now() - begin).count();
 #ifdef ART
-                allocd += art2.destroy();
+                art2.destroy();
 #endif
                 num_trials++;
             }
@@ -305,9 +329,6 @@ int main() {
             std::cout << "{'measurement': 'insert', 'datastructure': '" << label_clone
                       << "', 'x': " << BATCH_SIZE << ", 'y': " << rate << ", 'valsize': "
                       << value_len << ", 'inplace': False}," << std::endl;
-                      // << " (insert: " << insertions << ", update: " << updates
-                      // << ", alloc'd bytes per elem: " << (double)allocd / (num_trials * m)
-                      // << ")"
     }
     {
             int insertions = 0, updates = 0;
@@ -315,7 +336,7 @@ int main() {
             int num_trials = 0;
             while (ns < max_duration) {
                 auto begin = std::chrono::high_resolution_clock::now();
-                for (int i = 0; i < BATCH_SIZE; i++) {
+                for (int i = 0; i < T; i++) {
 #ifdef ART
                     unsigned char* str = gen_key();
                     VAL_TYPE* result = art.search(str, KEY_LEN);
@@ -345,19 +366,12 @@ int main() {
                     std::chrono::high_resolution_clock::now() - begin).count();
                 num_trials++;
             }
-            auto rate = num_trials * BATCH_SIZE / ((double)ns / (1000 * 1000 * 1000));
+            auto rate = num_trials * T / ((double)ns / (1000 * 1000 * 1000));
             std::cout << "{'measurement': 'insert', 'datastructure': '" << label
-                      << "', 'x': " << BATCH_SIZE << ", 'y': " << rate << ", 'valsize': "
+                      << "', 'y': " << rate << ", 'valsize': "
                       << value_len << ", 'inplace': True}," << std::endl;
     }
 #endif
-
-// #ifdef ART
-//     {
-//         int art_size = art.destroy();
-//         std::cout << "art size " << art_size << std::endl;
-//     }
-// #endif
 
 #ifdef ART
     std::cout << "# " << Test::sum << std::endl;
