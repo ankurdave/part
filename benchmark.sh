@@ -4,11 +4,13 @@ set -eux
 
 cd "$(dirname "$0")"
 
-paper_dir=~/repos/indexedrdd-paper/osdi16
+paper_dir=~/repos/IndexedRDDPaper/eurosys17
 figure_dir=$paper_dir/figures
 date=$(date -u +"%Y-%m-%dT%H-%M-%S")
 
-CXX_OPTS='-Wall -Wextra -Wno-invalid-offsetof -O3 -std=c++11 -stdlib=libc++ -g'
+CXX_OPTS='-O3 -std=c++11 -stdlib=libc++ -g'
+
+clang++ -Wall -Wextra $CXX_OPTS -c art.cpp -o art.o
 
 ####### Data structure performance comparison
 data_file=$figure_dir/micro-out-$date.txt

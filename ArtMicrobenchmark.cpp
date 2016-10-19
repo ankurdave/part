@@ -3,26 +3,28 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <vector>
+#include "getRSS.c"
+
 #ifdef HT
 #include <unordered_map>
 #endif
-#ifdef VECTOR
-#include <vector>
-#endif
+
 #ifdef ART
 #include "art.cpp"
 #endif
+
 #ifdef RB
 #include <map>
 #endif
+
 #ifdef BTREE
 #include "btree_map.h"
 #endif
-#include "getRSS.c"
+
 #ifdef ZIPF
 #include "discreteZipf.cpp"
 #endif
-// clang++ -DART -Wall -Wextra -Wno-invalid-offsetof -O3 -std=c++11 -stdlib=libc++ -o ArtMicrobenchmark -g ArtMicrobenchmark.cpp && ./ArtMicrobenchmark
 
 // Preprocessor macros - define using -D
 // data structure: {ART, HT, RB, BTREE}
@@ -77,6 +79,36 @@ unsigned char* gen_key() {
     return str;
 }
 
+unsigned char* string_to_art_key(std::string& str) {
+    unsigned char* result = new unsigned char[KEY_LEN];
+    const unsigned char* c_str = reinterpret_cast<const unsigned char*>(str.c_str());
+    for (int j = 0; j < KEY_LEN; j++) {
+        result[j] = c_str[j];
+    }
+    return result;
+}
+
+unsigned char* gen_existing_key(std::vector<std::string>& vector_k) {
+#ifdef RANDOM
+    return string_to_art_key(vector_k[rand() % vector_k.size()]);
+#endif
+#ifdef SEQUENTIAL
+    unsigned char* str = new unsigned char[KEY_LEN];
+    for (int j = 0; j < KEY_LEN; j++) {
+        str[j] = reinterpret_cast<const unsigned char*>(&cur_seq_key)[j];
+    }
+    cur_seq_key++;
+    return str;
+#endif
+#ifdef ZIPF
+    unsigned char* str = new unsigned char[KEY_LEN];
+    for (int j = 0; j < KEY_LEN; j++) {
+        str[j] = static_cast<unsigned char>(z.next());
+    }
+    return str;
+#endif
+}
+
 std::string gen_string_key() {
     std::string str(KEY_LEN, 0);
 #ifdef RANDOM
@@ -96,6 +128,27 @@ std::string gen_string_key() {
     }
 #endif
     return str;
+}
+
+std::string gen_existing_string_key(std::vector<std::string>& vector_k) {
+#ifdef RANDOM
+    return vector_k[rand() % vector_k.size()];
+#endif
+#ifdef SEQUENTIAL
+    std::string str(KEY_LEN, 0);
+    for (int j = 0; j < KEY_LEN; j++) {
+        str[j] = reinterpret_cast<const char*>(&cur_seq_string_key)[j];
+    }
+    cur_seq_string_key++;
+    return str;
+#endif
+#ifdef ZIPF
+    std::string str(KEY_LEN, 0);
+    for (int j = 0; j < KEY_LEN; j++) {
+        str[j] = static_cast<char>(z.next());
+    }
+    return str;
+#endif
 }
 
 VAL_TYPE gen_value() {
@@ -128,7 +181,7 @@ VAL_TYPE gen_value() {
 class Test {
 public:
     static int n;
-    static long sum;
+    static volatile long sum;
     static void iter_test(const unsigned char* key, uint32_t key_len, VAL_TYPE value) {
         (void)key_len;
         n++;
@@ -146,10 +199,13 @@ public:
 inline int max(int a, int b) { return (a > b) ? a : b; }
 
 int Test::n = 0;
-long Test::sum = 0;
+volatile long Test::sum = 0;
 
 int main() {
-    long sum = 0;
+    volatile long sum = 0;
+
+    std::vector<std::string> vector_k(m_0);
+    std::vector<VAL_TYPE> vector_v(m_0);
 
 #ifdef ART
     ArtTree<VAL_TYPE> art;
@@ -172,20 +228,16 @@ int main() {
     auto label_clone = "pbtree";
 #endif
 #ifdef VECTOR
-    std::vector<std::string> vector_k(m_0);
-    std::vector<VAL_TYPE> vector_v(m_0);
     auto label = "vector";
 #endif
     for (int i = 0; i < m_0; i++) {
-#ifdef ART
-        art.insert(gen_key(), KEY_LEN, gen_value());
-#endif
-#ifdef STDMAP
-        map.insert(std::make_pair(gen_string_key(), gen_value()));
-#endif
-#ifdef VECTOR
         vector_k[i] = gen_string_key();
         vector_v[i] = gen_value();
+#ifdef ART
+        art.insert(string_to_art_key(vector_k[i]), KEY_LEN, gen_value());
+#endif
+#ifdef STDMAP
+        map.insert(std::make_pair(vector_k[i], gen_value()));
 #endif
     }
 
@@ -242,9 +294,11 @@ int main() {
 #ifndef VECTOR
     {
         auto begin = std::chrono::high_resolution_clock::now();
+        int num_successes = 0;
+        int num_failures = 0;
         for (int iter = 0; iter < T; iter++) {
 #ifdef ART
-            unsigned char* str = gen_key();
+            unsigned char* str = gen_existing_key(vector_k);
             VAL_TYPE* result = art.search(str, KEY_LEN);
             if (result) {
 #ifdef BIG_VAL
@@ -253,11 +307,14 @@ int main() {
 #ifndef BIG_VAL
                 sum += *result;
 #endif
+                num_successes++;
+            } else {
+                num_failures++;
             }
             delete[] str;
 #endif
 #ifdef STDMAP
-            std::string str = gen_string_key();
+            std::string str = gen_existing_string_key(vector_k);
             auto it = map.find(str);
             if (it != map.end()) {
 #ifdef BIG_VAL
@@ -266,6 +323,9 @@ int main() {
 #ifndef BIG_VAL
                 sum += it->second;
 #endif
+                num_successes++;
+            } else {
+                num_failures++;
             }
 #endif
         }
@@ -275,7 +335,8 @@ int main() {
         auto rate = T / ((double)ns / (1000 * 1000 * 1000));
         std::cout << "{'measurement': 'read', 'datastructure': '" << label
                   << "', 'y': " << rate << ", 'valsize': "
-                  << value_len << "}," << std::endl;
+                  << value_len << ", 'num_successes': " << num_successes
+                  << ", 'num_failures': " << num_failures << "}," << std::endl;
     }
 #endif
 
@@ -372,9 +433,4 @@ int main() {
                       << value_len << ", 'inplace': True}," << std::endl;
     }
 #endif
-
-#ifdef ART
-    std::cout << "# " << Test::sum << std::endl;
-#endif
-    std::cout << "# " << sum << std::endl;
 }
