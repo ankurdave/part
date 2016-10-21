@@ -54,3 +54,7 @@ clang++ -DART -DART_REORDER_LEAVES -DBATCH_SIZE=10000 -DKEY_LEN=4 -DRANDOM $CXX_
 ./ArtMicrobenchmark | tee -a $data_file
 
 echo ']' >> $data_file
+
+
+###### Fault recovery benchmark
+data_file=$figure_dir/stacked.txt
