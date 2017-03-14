@@ -12,6 +12,11 @@ CXX_OPTS='-O3 -std=c++11 -stdlib=libc++ -g'
 
 clang++ -Wall -Wextra $CXX_OPTS -c art.cpp -o art.o
 
+pushd scala-benchmarks
+sbt compile
+export CLASSPATH=$(sbt 'export test:full-classpath' | grep .jar)
+popd
+
 ####### Data structure performance comparison
 data_file=$figure_dir/micro-out-$date.txt
 echo 'data += [' > $data_file
@@ -29,6 +34,10 @@ for value_size in '' '-DBIG_VAL'; do
 
         clang++ -DBTREE -DBATCH_SIZE=$b $value_size -DKEY_LEN=4 -DRANDOM $CXX_OPTS -o ArtMicrobenchmark ArtMicrobenchmark.cpp
         ./ArtMicrobenchmark | tee -a $data_file
+
+        pushd scala-benchmarks
+        java -cp $CLASSPATH CtrieBenchmark $b | tee -a $data_file
+        popd
     done
 
     clang++ -DVECTOR $value_size -DKEY_LEN=4 -DRANDOM $CXX_OPTS -o ArtMicrobenchmark ArtMicrobenchmark.cpp
