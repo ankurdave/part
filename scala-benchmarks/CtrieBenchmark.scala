@@ -78,6 +78,36 @@ object CtrieBenchmark {
     println(s"{'measurement': 'insert', 'datastructure': 'ctrie', 'x': $batchSize, " +
       s"'y': ${numTrials * batchSize / (insertTime / 1e9)}, 'valsize': $valSize, 'inplace': False},")
 
+    val numSnapshots = 100000
+    val snapshots = new Array[collection.Map[Int, ValType]](numSnapshots)
+    @volatile var snapshotIdx = 0
+    val writerThread = new Thread(new Runnable {
+      def run(): Unit = {
+        while (snapshotIdx < numSnapshots) {
+          uniform(T).foreach { k =>
+            ctrie.update(k, if (ctrie.contains(k)) incrementVal(ctrie.lookup(k)) else randomVal)
+          }
+        }
+      }
+    })
+    var snapshotTime = 0L
+    val snapshotThread = new Thread(new Runnable {
+      def run(): Unit = {
+        snapshotTime = time {
+          while (snapshotIdx < numSnapshots) {
+            snapshots(snapshotIdx) = ctrie.readOnlySnapshot()
+            snapshotIdx += 1
+          }
+        }
+      }
+    })
+    writerThread.start()
+    snapshotThread.start()
+    writerThread.join()
+    snapshotThread.join()
+    println(s"{'measurement': 'snapshot', 'datastructure': 'ctrie', " +
+      s"'y': ${numSnapshots / (snapshotTime / 1e9)}, 'valsize': $valSize},")
+
     Console.err.println(total)
     Console.err.println(readTotal)
   }
