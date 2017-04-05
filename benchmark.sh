@@ -36,7 +36,7 @@ for value_size in '' '-DBIG_VAL'; do
         ./ArtMicrobenchmark | tee -a $data_file
 
         pushd scala-benchmarks
-        java -cp $CLASSPATH CtrieBenchmark $b | tee -a $data_file
+        java -Xmx30G -cp $CLASSPATH CtrieBenchmark $b $value_size | tee -a $data_file
         popd
     done
 
